@@ -1,10 +1,31 @@
-# Comando `duck-help` — STUB (Fase F4 pendiente)
+# Comando `duck-help`
 
-Este archivo es un stub temporal usado para verificar el dispatcher.
-Será reemplazado por la implementación real en la Fase F4.
+Muestra ayuda de rubber-duck en tres modos.
 
-Cuando se invoque, responde con un mensaje breve:
+## Implementación
 
-> rubber-duck instalado correctamente. La ayuda completa estará disponible cuando se complete la Fase F4 del plan de implementación.
+`duck-help` se atiende **100% en bash** vía `bin/lib/help.sh`. El dispatcher hace short-circuit y nunca invoca a Claude para este comando — la ayuda es texto declarativo y no necesita razonamiento.
 
-No hagas nada más. No invoques herramientas. No leas archivos.
+## Modos
+
+| Invocación | Comportamiento |
+|---|---|
+| `duck-help` | Lista todos los comandos con descripción corta y enlaces a más detalle. |
+| `duck-help <comando>` | Uso + argumentos + ejemplos del comando indicado. |
+| `duck-help config` | Lista todas las claves de configuración con valor actual y default. |
+| `duck-help config.<clave>` | Descripción + valores permitidos + default + cómo cambiarla. |
+
+## Mantenimiento
+
+El catálogo vive en `bin/lib/help.sh` en tres arrays:
+
+- `HELP_SHORT[cmd]` — descripción de una línea (sale en ayuda general).
+- `HELP_USAGE[cmd]` — sintaxis del comando.
+- `HELP_DETAILS[cmd]` — descripción larga + ejemplos (heredoc).
+
+Sincronizar siempre con:
+
+- `setup.sh` (array `COMMANDS=()`)
+- README §"Comandos que instala"
+
+La parte de `config.<clave>` se genera dinámicamente leyendo el schema de `bin/lib/config.sh` (`CONFIG_DEFAULTS`, `CONFIG_ALLOWED`, `CONFIG_DESCRIPTIONS`). No requiere mantenimiento manual.

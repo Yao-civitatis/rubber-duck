@@ -47,10 +47,16 @@ if [[ ! -f "$cmd_file" ]]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Short-circuit: duck-config {list|get|set|reset} se atiende en bash puro.
-# Solo 'duck-config setup' (wizard interactivo) pasa por Claude.
+# Short-circuit: comandos puramente declarativos se atienden en bash.
+# Solo flujos interactivos / con razonamiento pasan por Claude.
 # -----------------------------------------------------------------------------
 
+# duck-help es 100% bash (renderiza tablas y descripciones estáticas).
+if [[ "$cmd" == "help" ]]; then
+  exec "$RUBBER_DUCK_HOME/bin/lib/help.sh" "$@"
+fi
+
+# duck-config: list/get/set/reset → bash; setup → Claude.
 if [[ "$cmd" == "config" ]]; then
   sub="${1:-list}"
   case "$sub" in
