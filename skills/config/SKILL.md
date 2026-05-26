@@ -8,7 +8,7 @@ Se activa cuando el dispatcher recibe `duck-config setup`, o cuando se detecta q
 
 1. Crear `~/.rubber-duck/config.json` siguiendo el schema **v1** (definido en `bin/lib/config.sh`).
 2. Hacer preguntas claras, en español, una a una, con opciones numeradas cuando la respuesta sea cerrada.
-3. No preguntar por `project.new_admin_path` ni `project.old_admin_path`: el dispatcher detecta el proyecto desde `$PWD`. Solo si el usuario pide expresamente fijarlos, llévalo a un sub-flujo opcional.
+3. Preguntar los paths de `project.new_admin_path` y `project.old_admin_path` para facilitar la localización posterior cuando el usuario invoque `duck-*` desde fuera del proyecto. Auto-detecta candidatos en spots comunes y propónlos como default. La detección primaria sigue siendo desde `$PWD`; estos paths son fallback.
 4. Si el usuario interrumpe con Ctrl+C en cualquier momento, guarda lo respondido + defaults para el resto. No dejes el archivo a medias.
 5. Al terminar, valida que el JSON cumple el schema invocando `bin/lib/config.sh list` y muestra el resumen al usuario.
 
@@ -17,6 +17,8 @@ Se activa cuando el dispatcher recibe `duck-config setup`, o cuando se detecta q
 | Clave | Default | Valores permitidos |
 |---|---|---|
 | `_version` | `1` | (constante) |
+| `project.new_admin_path` | `""` | ruta absoluta o vacío |
+| `project.old_admin_path` | `""` | ruta absoluta o vacío |
 | `output.language` | `es` | `es`, `en` |
 | `plan.output_format` | `md` | `md`, `html` |
 | `plan.output_dir` | `.` | cualquier ruta |
@@ -55,7 +57,62 @@ Si `~/.rubber-duck/config.json` ya existe:
 
 Si elige `2` → exit sin tocar nada.
 
-### Paso 1 — Idioma
+### Paso 1 — Rutas de los proyectos
+
+Antes de preguntar, auto-detecta candidatos para ambos proyectos. Busca en estos spots, con profundidad máxima 4:
+
+- `$HOME`
+- `$HOME/proyectos`
+- `$HOME/proyectos/tilt/tilts`
+- `$HOME/tilt/tilts`
+- `$HOME/dev`
+
+Marcadores:
+- **new-admin:** dir con `composer.json` que contiene `"name": "civitatis/newadmin"` o con `.claude/domain-index.md`
+- **old-admin:** dir con `application/admin/` Y `webroot/` ambos presentes (raíz de civitatis)
+
+Comando de auto-detección sugerido (ejecútalo vía Bash, no inventes paths):
+
+```bash
+# new-admin
+find $HOME/proyectos $HOME/proyectos/tilt/tilts $HOME/tilt/tilts $HOME/dev $HOME \
+  -maxdepth 4 -name composer.json 2>/dev/null \
+  | xargs grep -l '"civitatis/newadmin"' 2>/dev/null \
+  | head -1 \
+  | xargs -r dirname
+
+# old-admin
+find $HOME/proyectos $HOME/proyectos/tilt/tilts $HOME/tilt/tilts $HOME/dev $HOME \
+  -maxdepth 4 -type d -name admin -path '*/application/admin' 2>/dev/null \
+  | head -1 \
+  | sed 's|/application/admin||'
+```
+
+Pregunta con el candidato si existe:
+
+```
+🔎 He encontrado new-admin en: /home/yao/proyectos/tilt/tilts/new-admin
+   1) Usar esta ruta  [recomendado]
+   2) Introducir otra
+   3) Dejar vacío (la detección automática desde el directorio actual será suficiente)
+> _
+```
+
+Sin candidato:
+
+```
+🔎 No he localizado new-admin en los sitios comunes.
+   Introduce la ruta absoluta o pulsa enter para dejar en blanco:
+> _
+```
+
+Si el usuario introduce una ruta no vacía:
+- Comprueba que el directorio existe y contiene los marcadores.
+- Si no, muestra warning pero acepta (`⚠️ esa ruta no parece new-admin, pero la guardamos igual`).
+
+Repite el mismo flujo para **old-admin**.
+
+### Paso 2 — Idioma
 
 ```
 ¿En qué idioma quieres los outputs?
@@ -66,7 +123,7 @@ Si elige `2` → exit sin tocar nada.
 
 `1` → `output.language=es`; `2` → `output.language=en`.
 
-### Paso 2 — Formato del plan
+### Paso 3 — Formato del plan
 
 ```
 ¿Formato por defecto para los planes de implementación?
@@ -75,7 +132,7 @@ Si elige `2` → exit sin tocar nada.
 > _
 ```
 
-### Paso 3 — Directorio de outputs
+### Paso 4 — Directorio de outputs
 
 ```
 ¿Dónde guardar los planes y reportes generados?
@@ -86,7 +143,7 @@ Si elige `2` → exit sin tocar nada.
 
 Aplica el valor a `plan.output_dir`, `audit.export_dir` y `review.export_dir` salvo que el usuario aclare lo contrario después.
 
-### Paso 4 — duck-audit por defecto
+### Paso 5 — duck-audit por defecto
 
 ```
 ¿Cómo debe operar duck-audit cuando se invoca sin argumento?
@@ -95,7 +152,7 @@ Aplica el valor a `plan.output_dir`, `audit.export_dir` y `review.export_dir` sa
 > _
 ```
 
-### Paso 5 — Severidad que bloquea audit
+### Paso 6 — Severidad que bloquea audit
 
 ```
 ¿Qué nivel de problema bloquea el proceso?
@@ -105,7 +162,7 @@ Aplica el valor a `plan.output_dir`, `audit.export_dir` y `review.export_dir` sa
 > _
 ```
 
-### Paso 6 — Exportar informes
+### Paso 7 — Exportar informes
 
 ```
 ¿Exportar los informes de auditoría y revisión a archivo?
@@ -125,7 +182,7 @@ Si `2`:
 ```
 Y aplica el mismo formato a `audit.export_format` y `review.export_format`.
 
-### Paso 7 — Auto-commit
+### Paso 8 — Auto-commit
 
 ```
 ¿Quieres que rubber-duck haga commits automáticos cuando termine una fase?
@@ -158,14 +215,14 @@ Si `3`: pide la plantilla y guárdala en `~/.rubber-duck/commit-template.txt`.
 > _
 ```
 
-### Paso 8 — Persistencia
+### Paso 9 — Persistencia
 
 1. Crea `~/.rubber-duck/` si no existe.
 2. Escribe el JSON respetando los valores recogidos. Para cada clave no respondida (Ctrl+C antes de su pregunta), usa el default de la tabla.
 3. Añade `"_version": 1` en la raíz del JSON.
 4. Muestra el resumen final equivalente a `duck-config list`.
 
-### Paso 9 — Cierre
+### Paso 10 — Cierre
 
 ```
 ✓ Configuración guardada en ~/.rubber-duck/config.json
