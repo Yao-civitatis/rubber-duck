@@ -59,39 +59,49 @@ Si elige `2` → exit sin tocar nada.
 
 ### Paso 1 — Rutas de los proyectos
 
-Antes de preguntar, auto-detecta candidatos para ambos proyectos. Busca en estos spots, con profundidad máxima 4:
+Antes de preguntar, auto-detecta candidatos para ambos proyectos. Construye la lista de spots a buscar a partir de variantes del nombre del directorio raíz del usuario (en español e inglés, singular y plural):
 
 - `$HOME`
 - `$HOME/proyectos`
-- `$HOME/proyectos/tilt/tilts`
-- `$HOME/tilt/tilts`
+- `$HOME/proyecto`
+- `$HOME/projects`
+- `$HOME/project`
 - `$HOME/dev`
+
+Y para cada uno de esos también su subdirectorio `tilt/tilts/` cuando exista (el equipo lo usa como contenedor de servicios). Profundidad máxima `find -maxdepth 4`.
+
+Filtra spots inexistentes antes de pasarlos a `find` (evita ruido en stderr).
 
 Marcadores:
 - **new-admin:** dir con `composer.json` que contiene `"name": "civitatis/newadmin"` o con `.claude/domain-index.md`
-- **old-admin:** dir con `application/admin/` Y `webroot/` ambos presentes (raíz de civitatis)
+- **old-admin:** dir raíz de `civitatis`, identificado por contener `application/admin/` Y `webroot/` (ambos como subdirectorios). El path que se guarda en config es **la raíz de civitatis** (por ejemplo `$HOME/proyectos/tilt/tilts/civitatis`), no `application/admin`. Los skills que necesiten subrutas (templates, módulos, etc.) las componen ellos mismos a partir del root.
 
 Comando de auto-detección sugerido (ejecútalo vía Bash, no inventes paths):
 
 ```bash
+# Construye lista de spots reales que existen.
+spots=()
+for base in "$HOME/proyectos" "$HOME/proyecto" "$HOME/projects" "$HOME/project" "$HOME/dev" "$HOME"; do
+  [[ -d "$base" ]] && spots+=("$base")
+  [[ -d "$base/tilt/tilts" ]] && spots+=("$base/tilt/tilts")
+done
+
 # new-admin
-find $HOME/proyectos $HOME/proyectos/tilt/tilts $HOME/tilt/tilts $HOME/dev $HOME \
-  -maxdepth 4 -name composer.json 2>/dev/null \
+find "${spots[@]}" -maxdepth 4 -name composer.json 2>/dev/null \
   | xargs grep -l '"civitatis/newadmin"' 2>/dev/null \
   | head -1 \
   | xargs -r dirname
 
-# old-admin
-find $HOME/proyectos $HOME/proyectos/tilt/tilts $HOME/tilt/tilts $HOME/dev $HOME \
-  -maxdepth 4 -type d -name admin -path '*/application/admin' 2>/dev/null \
+# old-admin (raíz de civitatis: contiene application/admin/ + webroot/)
+find "${spots[@]}" -maxdepth 4 -type d -name admin -path '*/application/admin' 2>/dev/null \
   | head -1 \
   | sed 's|/application/admin||'
 ```
 
-Pregunta con el candidato si existe:
+Pregunta con el candidato si existe (sustituye `<usuario>` por el `$USER` real al renderizar):
 
 ```
-🔎 He encontrado new-admin en: /home/yao/proyectos/tilt/tilts/new-admin
+🔎 He encontrado new-admin en: /home/<usuario>/proyectos/tilt/tilts/new-admin
    1) Usar esta ruta  [recomendado]
    2) Introducir otra
    3) Dejar vacío (la detección automática desde el directorio actual será suficiente)
@@ -110,7 +120,7 @@ Si el usuario introduce una ruta no vacía:
 - Comprueba que el directorio existe y contiene los marcadores.
 - Si no, muestra warning pero acepta (`⚠️ esa ruta no parece new-admin, pero la guardamos igual`).
 
-Repite el mismo flujo para **old-admin**.
+Repite el mismo flujo para **old-admin**. Para old-admin el path esperado es la **raíz de civitatis**, no `application/admin`. Si el usuario introduce por error `…/civitatis/application/admin`, normaliza quitando el sufijo (`sed 's|/application/admin/*$||'`) y guarda la raíz, avisándole del cambio.
 
 ### Paso 2 — Idioma
 
