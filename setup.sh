@@ -140,10 +140,26 @@ echo "1/3 Escribiendo bloque en $RCFILE…"
 write_rcfile_block
 
 echo "2/3 Creando wrappers en $LOCAL_BIN…"
+# Construye un set rápido con los comandos válidos para detectar huérfanos.
+declare -A VALID_CMDS=()
 for cmd in "${COMMANDS[@]}"; do
+  VALID_CMDS[$cmd]=1
   install_wrapper "$cmd"
   echo "    ✓ duck-$cmd"
 done
+
+# Prune wrappers huérfanos (comandos eliminados o renombrados en versiones previas).
+# Solo se borran si el contenido fue generado por setup.sh (sello en el comentario).
+shopt -s nullglob
+for path in "$LOCAL_BIN"/duck-*; do
+  name="$(basename "$path")"
+  cmd="${name#duck-}"
+  if [[ -z "${VALID_CMDS[$cmd]:-}" ]] && head -n 2 "$path" 2>/dev/null | grep -qF "Generado por rubber-duck/setup.sh"; then
+    rm -f "$path"
+    echo "    ✗ borrado huérfano duck-$cmd"
+  fi
+done
+shopt -u nullglob
 
 echo "3/3 Configuración personal…"
 if [[ ! -f "$HOME/.rubber-duck/config.json" ]]; then
