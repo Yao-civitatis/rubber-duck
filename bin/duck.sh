@@ -47,6 +47,29 @@ if [[ ! -f "$cmd_file" ]]; then
 fi
 
 # -----------------------------------------------------------------------------
+# Short-circuit: duck-config {list|get|set|reset} se atiende en bash puro.
+# Solo 'duck-config setup' (wizard interactivo) pasa por Claude.
+# -----------------------------------------------------------------------------
+
+if [[ "$cmd" == "config" ]]; then
+  sub="${1:-list}"
+  case "$sub" in
+    list|get|set|reset)
+      # shellcheck source=lib/config.sh
+      exec "$RUBBER_DUCK_HOME/bin/lib/config.sh" "$@"
+      ;;
+    setup)
+      # cae al flujo normal: Claude lanza el wizard via skill.
+      ;;
+    *)
+      echo "Subcomando desconocido: $sub" >&2
+      echo "Uso: duck-config {list|get|set|reset|setup} ..." >&2
+      exit 2
+      ;;
+  esac
+fi
+
+# -----------------------------------------------------------------------------
 # 3. Comandos que NO requieren proyecto
 # -----------------------------------------------------------------------------
 
