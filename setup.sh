@@ -17,8 +17,14 @@ set -euo pipefail
 
 RUBBER_DUCK_HOME="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_BIN="$HOME/.local/bin"
+LOCAL_SLASH="$HOME/.claude/commands"
 MARKER_START="# >>> rubber-duck >>>"
 MARKER_END="# <<< rubber-duck <<<"
+SLASH_MARKER="<!-- rubber-duck-generated -->"
+
+# Carga catálogo (HELP_SHORT, HELP_USAGE) sin ejecutar el modo CLI de help.sh.
+# shellcheck source=bin/lib/help.sh
+source "$RUBBER_DUCK_HOME/bin/lib/help.sh"
 
 # Comandos que se exponen como binarios globales.
 COMMANDS=(
@@ -105,6 +111,136 @@ EOF
 }
 
 # -----------------------------------------------------------------------------
+# Slash commands de Claude Code (~/.claude/commands/)
+# -----------------------------------------------------------------------------
+
+# YAML-safe single-quoted scalar. Escapa apóstrofes duplicándolas.
+yaml_escape() {
+  local s="${1//\'/\'\'}"
+  printf "'%s'" "$s"
+}
+
+install_slash_command() {
+  local cmd="$1"
+  local path="$LOCAL_SLASH/duck-$cmd.md"
+  local desc="${HELP_SHORT[$cmd]:-Comando rubber-duck $cmd}"
+  local usage="${HELP_USAGE[$cmd]:-}"
+  # Quita el prefijo "duck-<cmd>" de HELP_USAGE para usarlo como argument-hint.
+  local args="${usage#duck-$cmd}"
+  args="${args# }"
+  local desc_yaml args_yaml
+  desc_yaml="$(yaml_escape "$desc")"
+  args_yaml="$(yaml_escape "$args")"
+
+  case "$cmd" in
+    help)
+      cat > "$path" <<EOF
+---
+description: $desc_yaml
+argument-hint: '[comando|config.<clave>]'
+allowed-tools: [Bash(duck-help:*)]
+---
+$SLASH_MARKER
+
+!duck-help \$ARGUMENTS
+EOF
+      ;;
+
+    config)
+      cat > "$path" <<EOF
+---
+description: $desc_yaml
+argument-hint: '{list|get|set|reset|setup} [clave] [valor]'
+allowed-tools: [Bash, Read, Write]
+---
+$SLASH_MARKER
+
+# /duck-config
+
+Argumentos del usuario: \$ARGUMENTS
+
+Comportamiento según el primer argumento:
+
+- \`list\`, \`get\`, \`set\` o \`reset\` (o sin argumentos): ejecuta \`!duck-config \$ARGUMENTS\` y muestra el output literal del bash. No añadas explicación; la salida ya está formateada.
+- \`setup\`: lee \`\$RUBBER_DUCK_HOME/commands/config.md\` y \`\$RUBBER_DUCK_HOME/skills/config/SKILL.md\`. Sigue el wizard al pie de la letra.
+- Otro valor: responde con el error \`Subcomando desconocido: <arg>\` y la lista de subcomandos válidos.
+EOF
+      ;;
+
+    install-hooks)
+      cat > "$path" <<EOF
+---
+description: $desc_yaml
+argument-hint: '[ruta-al-repo]'
+allowed-tools: [Bash(duck-install-hooks:*)]
+---
+$SLASH_MARKER
+
+!duck-install-hooks \$ARGUMENTS
+EOF
+      ;;
+
+    *)
+      # Plantilla skill-driven: tres pasos (detección → restricciones → instrucciones).
+      cat > "$path" <<EOF
+---
+description: $desc_yaml
+argument-hint: $args_yaml
+allowed-tools: [Bash, Read, Edit, Write, Grep, Glob]
+---
+$SLASH_MARKER
+
+# /duck-$cmd
+
+Argumentos del usuario: \$ARGUMENTS
+
+## Paso 1 — Detección del proyecto
+
+Ejecuta vía Bash:
+
+\`\`\`bash
+source "\$RUBBER_DUCK_HOME/bin/lib/detect-project.sh"
+detect_project_root || { duck_detection_error; exit 3; }
+printf 'PROJECT_ROOT=%s\nPROJECT_TYPE=%s\n' "\$PROJECT_ROOT" "\$PROJECT_TYPE"
+\`\`\`
+
+Si la detección falla, muestra el mensaje al usuario y para.
+
+## Paso 2 — Restricciones operacionales (CRÍTICAS)
+
+Siempre activas:
+
+- **R1 (Jira):** escritura SOLO en flujos explícitos con confirmación expresa del usuario (\`duck-analyze\`, \`duck-review\`). Append idempotente entre marcadores \`<!-- rubber-duck:start -->\` … \`<!-- rubber-duck:end -->\`.
+- **R2 (BBDD):** nunca \`INSERT\`/\`UPDATE\`/\`DELETE\`/\`ALTER\`/\`DROP\`/\`TRUNCATE\`. La BBDD es compartida entre new-admin y old-admin.
+
+Si \`\$PROJECT_TYPE = new-admin\`:
+
+- **R3 (Arquitectura):** hexagonal validada por \`phparkitect\` (Controllers → Services → Repositories → Models).
+- **R4 (Controllers):** sin \`AbstractController\`; inyecta el Service por parámetro.
+- **R5 (HTTP codes):** usa \`Slim\\Http\\StatusCode::HTTP_*\`, nunca literales numéricos.
+- **R6 (Frontend):** 100% Options API, Container + Presentational, módulos en \`dev/vue/src/modules/\`.
+- Carga \`\$PROJECT_ROOT/.claude/domain-index.md\`, \`project-context.md\` y \`refactoring-state.md\` si existen antes de explorar código.
+- Toolchain de calidad: usa \`\$PROJECT_ROOT/bin/pre-commit <herramienta>\` (no reimplementes phpstan/php-cs-fixer/phparkitect).
+
+Si \`\$PROJECT_TYPE = old-admin\`:
+
+- **Política mantenimiento-only.** Solo bug fixes y mantenimiento. Si el plan describe funcionalidad nueva → advierte al usuario y propón hacerlo en new-admin.
+- **Scope estricto:** solo se tocan rutas del módulo \`/admin\`: \`application/admin/\`, \`application/lib/{Admin,Dao/Admin,Dto/Admin,Queues/Newadmin,NewAdmin}/\`, \`application/templates/admin/\`, \`webroot/(static|dev)/(js|scss|css)/admin/\`, \`dev/src/js/admin/\`, \`application/css_admin/\`. Rechaza cambios fuera.
+- Sin estándares formales, sin Confluence, sin herramientas de calidad. Audit = sentido común (seguridad, lógica). No reportes estilo legacy.
+- **Stack legacy (PHP 5.6):** no uses syntax post-5.6 (sin spread \`...\`, sin \`??\`, sin typed properties, sin return types nullable). Imita el estilo del archivo editado.
+- **Visión:** eliminar old-admin → migrar a new-admin. Cambios no triviales → sugerir \`duck-migrate\`.
+
+## Paso 3 — Instrucciones del comando
+
+Lee \`\$RUBBER_DUCK_HOME/commands/$cmd.md\` y sigue su contenido al pie de la letra, aplicando las restricciones del Paso 2.
+
+Si \`\$RUBBER_DUCK_HOME/commands/$cmd.md\` aún no existe (fase de implementación en curso), informa al usuario y para.
+EOF
+      ;;
+  esac
+}
+
+# -----------------------------------------------------------------------------
 # 5. Instalación de git hooks (opcional)
 # -----------------------------------------------------------------------------
 
@@ -134,12 +270,13 @@ echo "🦆 rubber-duck setup"
 echo "    RUBBER_DUCK_HOME = $RUBBER_DUCK_HOME"
 echo "    rcfile           = $RCFILE"
 echo "    bin              = $LOCAL_BIN"
+echo "    slash commands   = $LOCAL_SLASH"
 echo
 
-echo "1/3 Escribiendo bloque en $RCFILE…"
+echo "1/4 Escribiendo bloque en $RCFILE…"
 write_rcfile_block
 
-echo "2/3 Creando wrappers en $LOCAL_BIN…"
+echo "2/4 Creando wrappers en $LOCAL_BIN…"
 # Construye un set rápido con los comandos válidos para detectar huérfanos.
 declare -A VALID_CMDS=()
 for cmd in "${COMMANDS[@]}"; do
@@ -161,7 +298,34 @@ for path in "$LOCAL_BIN"/duck-*; do
 done
 shopt -u nullglob
 
-echo "3/3 Configuración personal…"
+echo "3/4 Instalando slash commands en $LOCAL_SLASH…"
+mkdir -p "$LOCAL_SLASH"
+# Aviso si LOCAL_SLASH es un symlink (otra herramienta del usuario ya gestiona ese dir).
+if [[ -L "$LOCAL_SLASH" ]]; then
+  target="$(readlink -f "$LOCAL_SLASH")"
+  echo "    ℹ️  $LOCAL_SLASH es un symlink → $target"
+  echo "       Los duck-*.md se escribirán allí. Si ese repo se commitea con git,"
+  echo "       considera añadir 'commands/duck-*.md' a su .gitignore."
+fi
+declare -A VALID_SLASH=()
+for cmd in "${COMMANDS[@]}"; do
+  VALID_SLASH[$cmd]=1
+  install_slash_command "$cmd"
+  echo "    ✓ /duck-$cmd"
+done
+# Prune slash commands huérfanos (mismo mecanismo que para wrappers).
+shopt -s nullglob
+for path in "$LOCAL_SLASH"/duck-*.md; do
+  name="$(basename "$path" .md)"
+  cmd="${name#duck-}"
+  if [[ -z "${VALID_SLASH[$cmd]:-}" ]] && grep -qF "$SLASH_MARKER" "$path"; then
+    rm -f "$path"
+    echo "    ✗ borrado huérfano /duck-$cmd"
+  fi
+done
+shopt -u nullglob
+
+echo "4/4 Configuración personal…"
 if [[ ! -f "$HOME/.rubber-duck/config.json" ]]; then
   echo "    No existe ~/.rubber-duck/config.json. El asistente de configuración"
   echo "    se lanzará automáticamente la primera vez que ejecutes un comando duck-*."

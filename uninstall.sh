@@ -11,8 +11,10 @@
 set -euo pipefail
 
 LOCAL_BIN="$HOME/.local/bin"
+LOCAL_SLASH="$HOME/.claude/commands"
 MARKER_START="# >>> rubber-duck >>>"
 MARKER_END="# <<< rubber-duck <<<"
+SLASH_MARKER="<!-- rubber-duck-generated -->"
 
 # Comandos instalados por setup.sh. Mantener sincronizada con setup.sh.
 COMMANDS=(
@@ -46,12 +48,13 @@ detect_rcfile() {
 RCFILE="$(detect_rcfile)"
 
 echo "🦆 rubber-duck uninstall"
-echo "    rcfile = $RCFILE"
-echo "    bin    = $LOCAL_BIN"
+echo "    rcfile         = $RCFILE"
+echo "    bin            = $LOCAL_BIN"
+echo "    slash commands = $LOCAL_SLASH"
 echo
 
 # 1. Wrappers
-echo "1/3 Eliminando wrappers duck-* de $LOCAL_BIN…"
+echo "1/4 Eliminando wrappers duck-* de $LOCAL_BIN…"
 for cmd in "${COMMANDS[@]}"; do
   if [[ -e "$LOCAL_BIN/duck-$cmd" ]]; then
     rm -f "$LOCAL_BIN/duck-$cmd"
@@ -59,8 +62,20 @@ for cmd in "${COMMANDS[@]}"; do
   fi
 done
 
-# 2. Bloque del rcfile
-echo "2/3 Eliminando bloque de $RCFILE…"
+# 2. Slash commands de Claude Code
+echo "2/4 Eliminando slash commands de $LOCAL_SLASH…"
+shopt -s nullglob
+for path in "$LOCAL_SLASH"/duck-*.md; do
+  if grep -qF "$SLASH_MARKER" "$path" 2>/dev/null; then
+    rm -f "$path"
+    name="$(basename "$path" .md)"
+    echo "    ✓ borrado /$name"
+  fi
+done
+shopt -u nullglob
+
+# 3. Bloque del rcfile
+echo "3/4 Eliminando bloque de $RCFILE…"
 if [[ -f "$RCFILE" ]] && grep -qF "$MARKER_START" "$RCFILE"; then
   tmp="$(mktemp)"
   awk -v s="$MARKER_START" -v e="$MARKER_END" '
@@ -74,8 +89,8 @@ else
   echo "    (no había bloque que eliminar)"
 fi
 
-# 3. Configuración personal
-echo "3/3 Configuración personal…"
+# 4. Configuración personal
+echo "4/4 Configuración personal…"
 if [[ -d "$HOME/.rubber-duck" ]]; then
   echo "    Existe ~/.rubber-duck/ con tu configuración personal."
   read -r -p "    ¿Borrarla también? [s/N] " yn
