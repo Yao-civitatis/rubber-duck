@@ -1,0 +1,7 @@
+{
+  "_comment": "IDs de paginas de Confluence usados por duck-sync-docs. old-admin se omite intencionadamente: politica de mantenimiento, sin Confluence ni standards formales. Ver mcp/README.md.",
+  "new-admin": {
+    "backend": "2389508098",
+    "frontend": "2449342481"
+  }
+}

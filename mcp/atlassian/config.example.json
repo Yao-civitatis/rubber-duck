@@ -1,0 +1,10 @@
+{
+  "url": "https://civitatis.atlassian.net",
+  "cloud_id": "53c3ec94-9a0b-42ce-8e81-41719567106f",
+  "token": "TU_TOKEN_API_AQUI",
+  "jira_project_keys": ["PANA", "TAPEO"],
+  "confluence_space_key": "PANA",
+  "team_custom_field": "customfield_11001",
+  "team_custom_field_value": "Civitatis Admin",
+  "_comment": "Copia este archivo a config.json y rellena 'token' con tu token personal de https://id.atlassian.com/manage-profile/security/api-tokens. El archivo config.json esta en .gitignore."
+}

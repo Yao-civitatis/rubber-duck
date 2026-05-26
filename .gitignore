@@ -1,0 +1,20 @@
+# Credenciales MCP — nunca commiteadas
+mcp/atlassian/config.json
+mcp/database/config.json
+mcp/claude_desktop_config.json
+
+# Backups generados por /caveman:compress y similares
+*.original.md
+
+# Plan de implementación — se borra al cerrar el proyecto (Fase 14)
+PLAN_IMPLEMENTATION.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
