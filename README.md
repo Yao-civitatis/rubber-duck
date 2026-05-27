@@ -24,31 +24,42 @@ El proyecto sobre el que opera tiene dos partes:
 
 ```
 1. duck-analyze PROJ-123     →  lee el ticket, genera user story + AC + consideraciones técnicas
-                                 muestra el resultado y pide confirmación
-                                 si confirma → actualiza la descripción en Jira
+                                 muestra el resultado y pide confirmación con 3 opciones:
+                                    [s] actualizar Jira (append idempotente entre marcadores
+                                        <!-- rubber-duck:start --> ... <!-- rubber-duck:end -->,
+                                        replace in-place si ya existían)
+                                    [n] dejar solo en pantalla
+                                    [e] exportar a archivo, luego re-preguntar por Jira
 
-2. duck-plan PROJ-123        →  con el contenido del ticket analizado,
-                                 genera un plan de implementación en formato .md
-                                 guarda el archivo como PROJ-123_plan.md en el directorio actual
+2. duck-plan PROJ-123        →  genera un plan de implementación adaptando
+                                 templates/planning-template.md
+                                 guarda como <plan.output_dir>/PROJ-123/PROJ-123_plan.md
+                                 (path relativo a $PROJECT_ROOT salvo absoluto)
 
 3. duck-implement PROJ-123_plan.md
                              →  lee el plan .md indicado y escribe el código
-                                 respetando el stack de new-admin o old-admin
+                                 respetando el stack: new-admin (PHP 7.4 + Slim 3 +
+                                 illuminate 8 + Vue 2.6 Options API, arquitectura
+                                 hexagonal R3-R6) u old-admin (PHP 5.6 + Apache +
+                                 HTML/jQuery, scope estricto /admin, mantenimiento)
 
-4. duck-review PROJ-123      →  revisa que el código implementado
-                                 cumple los requisitos originales del ticket
+4. duck-review PROJ-123      →  revisa el código implementado vs AC del ticket
+                                 veredicto 🟢/🟡/🔴 → exit 0/0/1
+                                 si review.update_jira=true y confirmas → comentario
+                                 nuevo en Jira (nunca edita comentarios previos)
 
-5. duck-audit [proyecto] [ruta|--branch]
-                             →  audita el código contra:
-                                 - normas de estructura del proyecto (docs/)
-                                 - phpstan
-                                 - php-cs-fixer
-                                 - phparkitect
-                                 con --branch audita solo los archivos
-                                 modificados en la rama actual vs main/master
+5. duck-audit <ruta|all|--branch>
+                             →  detecta proyecto automáticamente y audita:
+                                 - new-admin: delega en $PROJECT_ROOT/bin/pre-commit
+                                   (phpstan + php-cs-fixer + phparkitect) + capa
+                                   semántica contra ~/.rubber-duck/docs/
+                                 - old-admin: modo "sentido común" sin herramientas
+                                   estáticas (política mantenimiento)
 
-6. duck-sync-docs [proyecto] →  obtiene las normas actualizadas de Confluence
-                                 y sobreescribe los archivos en docs/
+6. duck-sync-docs [new-admin|old-admin|all]
+                             →  Confluence (solo new-admin) + análisis código real
+                                 escribe en ~/.rubber-duck/docs/<proyecto>/
+                                 --bundle para refrescar el bundle del repo (maintainer)
 ```
 
 ---
@@ -58,35 +69,76 @@ El proyecto sobre el que opera tiene dos partes:
 ```
 rubber-duck/
 ├── bin/
+│   ├── duck.sh                 # dispatcher central
+│   └── lib/
+│       ├── detect-project.sh   # detección dinámica $PROJECT_ROOT / $PROJECT_TYPE
+│       ├── config.sh           # CRUD sobre ~/.rubber-duck/config.json (sin Claude)
+│       ├── help.sh             # render de duck-help (sin Claude)
+│       └── git.sh              # helper auto-commit/auto-push para skills
 ├── hooks/
-│   └── git/
+│   ├── git/
+│   │   ├── pre-commit          # opt-in: ver git.hooks.pre_commit_enabled
+│   │   ├── pre-push            # opt-in: ver git.hooks.pre_push_enabled
+│   │   └── post-merge          # opt-in: ver git.hooks.post_merge_enabled
+│   └── install-hooks.sh        # instalador en .git/hooks/ del repo destino
 ├── mcp/
 │   ├── atlassian/
-│   └── database/
-├── docs/
+│   │   ├── config.example.json
+│   │   ├── page-ids.json       # IDs reales de Confluence (solo new-admin)
+│   │   └── (config.json)       # .gitignore — credenciales locales
+│   ├── database/
+│   │   ├── config.example.json
+│   │   └── (config.json)       # .gitignore
+│   ├── claude_desktop_config.example.json
+│   └── README.md
+├── docs/                       # bundle versionado (capa 1 del modelo docs)
 │   ├── new-admin/
-│   │   ├── backend-standards.md     # desde Confluence
-│   │   ├── frontend-standards.md   # desde Confluence
-│   │   ├── upgrade-targets.md      # stack destino — manual
-│   │   └── project-snapshot.md     # generado del código real
-│   └── old-admin/
-│       ├── backend-standards.md     # desde Confluence
-│       ├── frontend-standards.md   # desde Confluence
-│       └── project-snapshot.md     # generado del código real
+│   │   ├── backend-standards.md     # snapshot Confluence (id 2389508098)
+│   │   ├── frontend-standards.md    # snapshot Confluence (id 2449342481)
+│   │   ├── upgrade-targets.md       # stack destino — manual (placeholder)
+│   │   └── project-snapshot.md      # snapshot código real
+│   ├── old-admin/
+│   │   └── project-snapshot.md      # solo snapshot; sin Confluence (política mantenimiento)
+│   └── last-sync.json
+├── rules/                      # reglas transversales (citadas por skills/agents/commands)
+│   ├── README.md
+│   ├── export-paths.md
+│   ├── output-language.md
+│   ├── project-detection.md
+│   ├── self-contained.md
+│   └── operational-restrictions.md  # R1-R7 + política old-admin
+├── templates/                  # plantillas locales (regla self-contained)
+│   ├── README.md
+│   ├── planning-template.md
+│   ├── agents-exceptions-template.md
+│   └── commit-template.example.txt
+├── dev-history/                # histórico de implementaciones (no consumido en runtime)
+│   ├── README.md
+│   └── <fecha>_plan_implementation_v<N>.md
 ├── skills/
 │   ├── project-context/
+│   │   ├── new_admin.md
+│   │   └── old_admin.md
 │   ├── jira-analyzer/
+│   │   ├── SKILL.md
+│   │   └── prompts/generate_story.md
 │   ├── task-planner/
+│   │   ├── SKILL.md
+│   │   └── prompts/build_plan.md
 │   ├── task-implementer/
+│   │   ├── SKILL.md
+│   │   └── prompts/{new_admin,old_admin}.md
 │   ├── task-reviewer/
+│   │   ├── SKILL.md
+│   │   └── prompts/review.md
 │   ├── docs-sync/
 │   │   ├── SKILL.md
-│   │   └── prompts/
-│   │       ├── sync-confluence.md   # cómo leer y convertir desde Confluence
-│   │       ├── analyze-project.md   # cómo analizar el código real
-│   │       └── diff-report.md       # cómo generar el resumen de cambios
+│   │   └── prompts/{sync-confluence,analyze-project,diff-report}.md
 │   ├── code-audit/
+│   │   ├── SKILL.md
+│   │   └── prompts/{phpstan,cs-fixer,arkitect,standards}.md
 │   └── config/
+│       └── SKILL.md            # wizard interactivo (duck-config setup)
 ├── agents/
 │   ├── analyzer-agent.md
 │   ├── planner-agent.md
@@ -100,31 +152,33 @@ rubber-duck/
 │   ├── standup-agent.md
 │   └── upgrade-agent.md
 ├── commands/
-│   ├── analyze.md
-│   ├── plan.md
-│   ├── implement.md
-│   ├── review.md
-│   ├── sync-docs.md
-│   ├── audit.md
-│   ├── config.md
-│   ├── help.md
-│   ├── onboarding.md
-│   ├── debug.md
-│   ├── migrate.md
-│   ├── db.md
-│   ├── standup.md
-│   └── upgrade.md
+│   ├── analyze.md  plan.md  implement.md  review.md
+│   ├── audit.md    sync-docs.md
+│   ├── config.md   help.md
+│   ├── onboarding.md  debug.md  migrate.md
+│   ├── db.md       standup.md   upgrade.md
+│   └── install-hooks.md
 ├── setup.sh
 ├── uninstall.sh
 ├── .gitignore
 └── README.md
 
-# fuera del repo, en el home del usuario:
+# fuera del repo, en el home del usuario (capa 2 del modelo docs):
 ~/.rubber-duck/
-├── config.json              # configuración personal
-├── commit-template.txt      # template de commit (si format = custom)
-└── upgrade-status.json      # progreso de la migración de stack
+├── config.json                 # configuración personal
+├── commit-template.txt         # solo si git.commit_message_format = custom
+├── upgrade-status.json         # progreso de la migración de stack
+├── last-post-merge-sync.log    # log del hook post-merge (si está activo)
+└── docs/                       # copia de rubber-duck/docs/, actualizada por duck-sync-docs
+    ├── new-admin/{backend-standards,frontend-standards,upgrade-targets,project-snapshot}.md
+    ├── old-admin/project-snapshot.md
+    └── last-sync.json
 ```
+
+> **Modelo de 3 capas de docs** (ver `rules/` y `skills/docs-sync/SKILL.md`):
+> 1. **Bundle versionado** en `rubber-duck/docs/` (factory default).
+> 2. **Install copy** en `~/.rubber-duck/docs/` (seeded por `setup.sh`, preservada en re-instalaciones).
+> 3. **User updates** vía `duck-sync-docs` → escribe en `~/.rubber-duck/docs/`. Modo `--bundle` (maintainer) escribe en el repo.
 
 ---
 
@@ -420,8 +474,11 @@ Instrucciones para el skill de análisis de tickets. Le dice a Claude que cuando
 1. Usar el MCP de Atlassian para leer el ticket indicado.
 2. Si se pasa un archivo o texto como segundo argumento, incorporarlo como contexto adicional.
 3. Generar tres secciones: **User Story**, **Criterios de Aceptación** y **Consideraciones Técnicas**.
-4. Mostrar el resultado al usuario y esperar confirmación.
-5. Si el usuario confirma, actualizar la descripción del ticket en Jira añadiendo el contenido generado al final.
+4. Mostrar el resultado al usuario.
+5. Pedir confirmación con **3 opciones**:
+   - `[s]` actualizar Jira **idempotentemente** entre marcadores `<!-- rubber-duck:start -->` … `<!-- rubber-duck:end -->`. Si los marcadores ya existían → reemplaza solo el bloque (resto de la descripción intacto). Si no → añade al final.
+   - `[n]` no tocar nada.
+   - `[e]` exportar a archivo (path: `<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>`), luego re-pregunta `[s/N]` por Jira.
 
 #### `skills/jira-analyzer/prompts/generate_story.md`
 
@@ -896,24 +953,29 @@ duck-config setup
 | Clave | Valores | Default | Descripción |
 |---|---|---|---|
 | `plan.output_format` | `md`, `html` | `md` | Formato del archivo generado por `duck-plan` |
-| `plan.output_dir` | cualquier ruta | `.` | Directorio donde se guarda el plan |
-| `project.new_admin_path` | ruta absoluta | — | Ruta al código de new-admin en el sistema |
-| `project.old_admin_path` | ruta absoluta | — | Ruta al código de old-admin en el sistema |
-| `implement.auto_format` | `true`, `false` | `false` | Ejecuta php-cs-fixer automáticamente tras implementar |
+| `plan.output_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-plan`. Relativo a `$PROJECT_ROOT` si no empieza por `/` o `~`. Path final: `<resolved>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>` |
+| `analyze.export_format` | `md`, `html`, `json`, `txt` | `md` | Formato del archivo exportado por `duck-analyze` (opción `e` en la confirmación) |
+| `analyze.export_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-analyze`. Path final: `<resolved>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>` |
+| `project.new_admin_path` | ruta absoluta | `""` | Fallback opcional si la auto-detección desde `$PWD` falla |
+| `project.old_admin_path` | ruta absoluta | `""` | Fallback opcional si la auto-detección desde `$PWD` falla |
+| `implement.auto_format` | `true`, `false` | `false` | Ejecuta `php-cs-fixer` (vía `bin/pre-commit`) automáticamente tras implementar (solo new-admin) |
 | `audit.default_mode` | `branch`, `all` | `branch` | Modo por defecto de `duck-audit` sin argumentos |
-| `audit.fail_on` | `error`, `warning`, `all` | `error` | Qué nivel de problema bloquea el proceso |
+| `audit.fail_on` | `error`, `warning`, `all` | `error` | Severidad mínima que bloquea (exit 1) |
 | `audit.export` | `true`, `false` | `false` | Exporta el informe de auditoría a un archivo |
 | `audit.export_format` | `md`, `html`, `json`, `txt` | `md` | Formato del archivo exportado |
-| `audit.export_dir` | cualquier ruta | `.` | Directorio donde se guarda el informe exportado |
+| `audit.export_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-audit`. Relativo a `$PROJECT_ROOT` |
 | `review.export` | `true`, `false` | `false` | Exporta el informe de revisión a un archivo |
 | `review.export_format` | `md`, `html`, `json`, `txt` | `md` | Formato del archivo exportado |
-| `review.export_dir` | cualquier ruta | `.` | Directorio donde se guarda el informe exportado |
-| `git.auto_commit` | `true`, `false` | `false` | Hace commit automático al terminar el paso indicado |
+| `review.export_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-review`. Relativo a `$PROJECT_ROOT` |
+| `review.update_jira` | `true`, `false` | `true` | Si `true`, tras mostrar el informe pide confirmación y postea como comentario nuevo en Jira (nunca edita comentarios previos) |
+| `git.auto_commit` | `true`, `false` | `false` | Hace commit automático en `$PROJECT_ROOT` al terminar el paso indicado |
 | `git.auto_commit_after` | `implement`, `review`, `audit` | `audit` | En qué paso se dispara el commit automático |
-| `git.commit_message_format` | `jira`, `conventional`, `custom` | `jira` | Formato del mensaje de commit |
+| `git.commit_message_format` | `jira`, `conventional`, `custom` | `jira` | Formato del mensaje. `custom` lee `~/.rubber-duck/commit-template.txt` con variables `{jira_key}` `{title}` `{summary}` `{step}` |
 | `git.auto_push` | `true`, `false` | `false` | Hace push automático tras el commit |
-| `review.update_jira` | `true`, `false` | `true` | Añade el resultado del review al ticket en Jira |
-| `output.language` | `es`, `en` | `es` | Idioma de los textos y reportes generados |
+| `git.hooks.pre_commit_enabled` | `true`, `false` | `false` | Activa el hook git pre-commit (audit antes del commit). Opt-in para no ralentizar commits |
+| `git.hooks.pre_push_enabled` | `true`, `false` | `false` | Activa el hook git pre-push (review antes del push) |
+| `git.hooks.post_merge_enabled` | `true`, `false` | `false` | Activa el hook git post-merge (sync-docs tras pull/merge) |
+| `output.language` | `es`, `en` | `es` | Idioma de los textos y reportes generados (literales y código se preservan) |
 
 ### Ejemplo de configuración típica
 
