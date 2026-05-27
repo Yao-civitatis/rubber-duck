@@ -4,8 +4,8 @@ Construye el plan a partir de `$RUBBER_DUCK_HOME/templates/planning-template.md`
 
 ## Reglas de adaptación de la plantilla
 
-- **Idioma del cuerpo:** todo en inglés (regla del template).
-- **Idioma de los placeholders y comentarios:** se mantienen como están en la plantilla.
+- **Idioma del cuerpo:** se determina por `output.language` del config (`es` por defecto, `en` opcional). Todo el contenido del plan generado se redacta en ese idioma, incluyendo títulos de secciones, descripciones, criterios, comentarios y el commit message sugerido.
+- **Literales que se preservan:** Jira keys (`PANA-123`), X-Ray IDs, símbolos de código (`PaymentService::process()`), paths de archivos, comandos shell. Estos NO se traducen.
 - **`{JIRA_KEY}`:** sustituir por la key real del ticket.
 - **`{project}.{module}`:** sustituir por el módulo real. Para new-admin: `new-admin.<modulo>` donde `<modulo>` se deriva del dominio (ej: `new-admin.payments`, `new-admin.activities`). Para old-admin: `old-admin.<path-corto>` donde `<path-corto>` es el subdirectorio relevante del scope `/admin`.
 - **`[Link to JIRA]`:** sustituir por la URL real del ticket (`https://civitatis.atlassian.net/browse/<JIRA-KEY>`).

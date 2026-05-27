@@ -20,8 +20,8 @@
 *Planner rule: ONLY expand the FIRST pending scenario. Leave the rest as "[Pending Planning]".*
 
 **Language rule for this template:**
-- Write all sections in English.
-- Keep IDs and code literals as-is (Jira keys, X-Ray IDs, symbols, commands).
+- The generated plan is rendered in the language configured by `output.language` in `~/.rubber-duck/config.json` (`es` by default, `en` optional). All headings, descriptions, criteria, comments and the suggested commit message follow that language.
+- Keep IDs and code literals as-is (Jira keys, X-Ray IDs, symbols, commands, file paths). Those are never translated.
 
 ### 🟢 ACTIVE SCENARIO: [Gherkin Scenario 1 / X-Ray ID]
 **Criteria:** *Given [X] When [Y] Then [Z]*

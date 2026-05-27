@@ -9,9 +9,13 @@ Esta carpeta contiene **copias locales** de plantillas genéricas que rubber-duc
 | `planning-template.md` | `ai-development-rules/rules/templates/planning-template.md` | `71e8924` | 2026-05-27 | `skills/task-planner/` (formato del plan generado por `duck-plan`) |
 | `agents-exceptions-template.md` | `ai-development-rules/rules/templates/agents-exceptions-template.md` | `71e8924` | 2026-05-27 | `skills/code-audit/` (formato de `AGENTS.md` con excepciones reconocidas) |
 
+## Divergencias locales conocidas
+
+- `planning-template.md`: el bloque "Language rule for this template" fue **modificado localmente** para que el idioma siga `output.language` del config en lugar de forzar inglés. Al re-sincronizar desde origen, preservar esta divergencia (no aceptar ciegamente el "Write all sections in English" upstream).
+
 ## Re-sincronización
 
-Cuando la plantilla origen evolucione en `ai-development-rules`, re-copiar manualmente y actualizar la tabla (commit + fecha). No hay sync automático: simplicidad sobre frescura.
+Cuando la plantilla origen evolucione en `ai-development-rules`, re-copiar manualmente y actualizar la tabla (commit + fecha). **Antes de aceptar la copia**, revisar que las divergencias locales documentadas arriba siguen aplicadas. Aplicar los cambios upstream sobre el resto del archivo. No hay sync automático: simplicidad sobre frescura.
 
 Procedimiento:
 
