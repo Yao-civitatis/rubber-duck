@@ -67,9 +67,9 @@ Imprime el resultado completo en pantalla con un encabezado claro:
 Pregunta literalmente:
 
 ```
-¿Qué hago con el análisis?
-  [s] Sí, actualizar Jira (append idempotente entre marcadores)
-  [n] No, dejar solo en pantalla
+¿Cómo quieres proceder con el análisis?
+  [s] Actualizar Jira (append idempotente entre marcadores)
+  [n] Dejar solo en pantalla, no tocar nada
   [e] Exportar a archivo (luego te vuelvo a preguntar por Jira)
 > _
 ```
