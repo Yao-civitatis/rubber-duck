@@ -6,9 +6,6 @@ mcp/claude_desktop_config.json
 # Backups generados por /caveman:compress y similares
 *.original.md
 
-# Plan de implementación — se borra al cerrar el proyecto (Fase 14)
-PLAN_IMPLEMENTATION.md
-
 # IDE
 .idea/
 .vscode/
