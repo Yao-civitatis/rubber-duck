@@ -67,10 +67,10 @@ Imprime el resultado completo en pantalla con un encabezado claro:
 Pregunta literalmente:
 
 ```
-¿Cómo quieres proceder con el análisis?
-  [s] Actualizar Jira (append idempotente entre marcadores)
-  [n] Dejar solo en pantalla, no tocar nada
-  [e] Exportar a archivo (luego te vuelvo a preguntar por Jira)
+¿Quieres actualizar la descripción del ticket en Jira?
+  [s] Sí (append idempotente entre marcadores)
+  [n] No, dejar solo en pantalla
+  [e] Exportar primero a archivo, luego te vuelvo a preguntar
 > _
 ```
 
