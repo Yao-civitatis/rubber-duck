@@ -88,18 +88,19 @@ Sigue la **convención universal de paths de export** definida en `$RUBBER_DUCK_
 ```
 
 donde:
-- `<analyze.export_dir>` viene de config (default `.`).
+- `<analyze.export_dir>` viene de config (default `.`). **Si es relativo, se resuelve contra `$PROJECT_ROOT`**; si es absoluto, se usa tal cual.
 - `<ext>` viene de `analyze.export_format` (`md` | `html` | `json` | `txt`, default `md`).
 - `<JIRA-KEY>` es la clave del ticket (siempre disponible).
 
 Procedimiento:
 
-1. Calcular `dest_dir = "<analyze.export_dir>/<JIRA-KEY>"`.
-2. `mkdir -p "$dest_dir"`.
-3. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_analyze.<ext>"`.
-4. Si `$dest_file` existe → preguntar sobrescribir / backup `.bak` / cancelar.
-5. **Idioma del contenido exportado** = `output.language` (default `es`). Reutiliza el bloque ya generado en el Paso 3.
-6. **Render según `<ext>`:**
+1. Resolver `<analyze.export_dir>` → `resolved_export_dir`.
+2. Calcular `dest_dir = "$resolved_export_dir/<JIRA-KEY>"`.
+3. `mkdir -p "$dest_dir"`.
+4. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_analyze.<ext>"`.
+5. Si `$dest_file` existe → preguntar sobrescribir / backup `.bak` / cancelar.
+6. **Idioma del contenido exportado** = `output.language` (default `es`). Reutiliza el bloque ya generado en el Paso 3.
+7. **Render según `<ext>`:**
    - `md` → escribir el bloque tal cual (separador `---` arriba + bloque entre marcadores).
    - `html` → convertir markdown a HTML simple. Incluir `<!DOCTYPE html>`, `<meta charset="UTF-8">`, título `<title>Analyze <JIRA-KEY></title>`.
    - `json` → estructura:
@@ -123,8 +124,8 @@ Procedimiento:
      }
      ```
    - `txt` → strip markdown (sin asteriscos, sin headers `#`), texto plano legible.
-7. Escribir archivo.
-8. Confirmar al usuario:
+8. Escribir archivo.
+9. Confirmar al usuario:
    ```
    ✓ Análisis exportado a <ruta>
    ```

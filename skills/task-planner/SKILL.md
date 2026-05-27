@@ -60,17 +60,18 @@ Sigue la **convención universal de paths de export** definida en `$RUBBER_DUCK_
 
 donde:
 
-- `<plan.output_dir>` viene de config (default `.`).
+- `<plan.output_dir>` viene de config (default `.`). **Si es relativo, se resuelve contra `$PROJECT_ROOT`**; si es absoluto (empieza por `/` o `~`), se usa tal cual.
 - `<ext>` viene de `plan.output_format` (default `md`).
 - `<JIRA-KEY>` es la clave del ticket (siempre disponible para `duck-plan`).
 - Si por algún motivo no hubiera key (defensivo), usar `<plan.output_dir>/plan/plan.<ext>`.
 
 Procedimiento:
 
-1. Calcular `dest_dir = "<plan.output_dir>/<JIRA-KEY>"`.
-2. `mkdir -p "$dest_dir"`.
-3. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_plan.<ext>"`.
-4. Si `$dest_file` ya existe → preguntar:
+1. Resolver `<plan.output_dir>` aplicando la regla anterior → `resolved_output_dir`.
+2. Calcular `dest_dir = "$resolved_output_dir/<JIRA-KEY>"`.
+3. `mkdir -p "$dest_dir"`.
+4. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_plan.<ext>"`.
+5. Si `$dest_file` ya existe → preguntar:
    ```
    Ya existe <ruta>. ¿Qué hago?
      [s] Sobrescribir
@@ -78,8 +79,8 @@ Procedimiento:
      [N] Cancelar
    > _
    ```
-5. Escribe el archivo.
-6. Confirma: `✓ Plan guardado en <ruta>`.
+6. Escribe el archivo.
+7. Confirma: `✓ Plan guardado en <ruta>`.
 
 ### Paso 5 — Salida
 

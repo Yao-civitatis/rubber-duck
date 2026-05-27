@@ -83,18 +83,19 @@ Si `review.export = true`, sigue la **convención universal de paths de export**
 ```
 
 donde:
-- `<review.export_dir>` viene de config (default `.`).
+- `<review.export_dir>` viene de config (default `.`). **Si es relativo, se resuelve contra `$PROJECT_ROOT`**; si es absoluto, se usa tal cual.
 - `<ext>` viene de `review.export_format` (default `md`).
 - `<JIRA-KEY>` siempre disponible (argumento obligatorio del comando).
 
 Procedimiento:
 
-1. Calcular `dest_dir = "<review.export_dir>/<JIRA-KEY>"`.
-2. `mkdir -p "$dest_dir"`.
-3. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_review.<ext>"`.
-4. Si `$dest_file` existe → preguntar sobrescribir / backup `.bak` / cancelar.
-5. Escribir archivo.
-6. Confirmar: `✓ Informe guardado en <ruta>`.
+1. Resolver `<review.export_dir>` → `resolved_export_dir`.
+2. Calcular `dest_dir = "$resolved_export_dir/<JIRA-KEY>"`.
+3. `mkdir -p "$dest_dir"`.
+4. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_review.<ext>"`.
+5. Si `$dest_file` existe → preguntar sobrescribir / backup `.bak` / cancelar.
+6. Escribir archivo.
+7. Confirmar: `✓ Informe guardado en <ruta>`.
 
 ### Paso 8 — Update a Jira (opcional, requiere confirmación)
 

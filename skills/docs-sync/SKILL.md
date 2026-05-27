@@ -26,11 +26,19 @@ Sin argumento → comportamiento equivalente a `all`.
 
 Para cada proyecto a sincronizar (`new-admin` y/o `old-admin`):
 
-1. Si `$PROJECT_ROOT` está definido y `$PROJECT_TYPE` coincide con el proyecto a sincronizar → usar `$PROJECT_ROOT`.
+1. Si `$PROJECT_ROOT` está definido y `$PROJECT_TYPE` coincide con el proyecto a sincronizar → usar `$PROJECT_ROOT` como **target root**.
 2. Si no, leer `~/.rubber-duck/config.json`:
-   - new-admin → `project.new_admin_path`
-   - old-admin → `project.old_admin_path`
+   - new-admin → `project.new_admin_path` como **target root**.
+   - old-admin → `project.old_admin_path` como **target root**.
 3. Si el valor es vacío o el directorio no existe → **abortar para ese proyecto** con error claro. No inventar paths.
+
+Los archivos generados se escriben siempre **dentro del target root** del proyecto correspondiente:
+
+- new-admin → `<target-root-new-admin>/docs/new-admin/{backend-standards,frontend-standards,project-snapshot}.md`
+- old-admin → `<target-root-old-admin>/docs/old-admin/project-snapshot.md`
+- `<target-root-<proyecto>>/docs/last-sync.json`
+
+Esta resolución sigue el espíritu de `rules/export-paths.md`: paths relativos viven dentro del proyecto al que pertenecen.
 
 ## Diferencias por proyecto
 
@@ -41,14 +49,14 @@ Para cada proyecto a sincronizar (`new-admin` y/o `old-admin`):
 - Para cada ID:
   - Llamar al MCP de Atlassian para obtener el contenido (formato `storage` o `atlas_doc_format`).
   - Convertir a markdown limpio siguiendo `$RUBBER_DUCK_HOME/skills/docs-sync/prompts/sync-confluence.md`.
-  - Escribir a `<repo>/docs/new-admin/backend-standards.md` o `frontend-standards.md`.
+  - Escribir a `<target-root>/docs/new-admin/backend-standards.md` o `frontend-standards.md`.
 - Si la lectura falla (sin permisos, sin red), registrar el error y continuar con el análisis de código.
 
 **Análisis de código:**
 - Lee `composer.json`, `composer.lock`, `dev/package.json`, `dev/package-lock.json`, `phpstan.dist.neon`, `phparkitect.php`, etc.
 - Recorre la estructura `app/`, `config/`, `dev/vue/`, etc.
 - Lee `$PROJECT_ROOT/.claude/project-context.md`, `domain-index.md`, `refactoring-state.md` si existen y los cita (no duplica).
-- Genera `<repo>/docs/new-admin/project-snapshot.md` siguiendo `prompts/analyze-project.md`.
+- Genera `<target-root>/docs/new-admin/project-snapshot.md` siguiendo `prompts/analyze-project.md`.
 
 ### old-admin
 
@@ -79,7 +87,7 @@ A partir del argumento (`new-admin` | `old-admin` | `all` | vacío).
    - Recoger lista de archivos escritos.
 3. **Análisis del código:**
    - Aplicar `prompts/analyze-project.md`.
-   - Escribir `<repo>/docs/<proyecto>/project-snapshot.md`.
+   - Escribir `<target-root>/docs/<proyecto>/project-snapshot.md`.
 
 ### Paso 3 — Diff report
 

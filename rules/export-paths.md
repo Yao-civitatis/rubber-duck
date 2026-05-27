@@ -5,16 +5,39 @@
 ## Patrón
 
 ```
-<config.output_dir>/<carpeta>/<filename>
+<output_dir_resuelto>/<carpeta>/<filename>
 ```
 
-donde:
+### Resolución de `<output_dir_resuelto>`
 
-- `<config.output_dir>` es la clave de config correspondiente al comando (`plan.output_dir`, `audit.export_dir`, `review.export_dir`, `analyze.export_dir`, etc.). Default: `.`.
-- `<carpeta>` es:
-  - **`<JIRA-KEY>`** cuando el comando tiene clave de Jira disponible (caso normal).
-  - **`<cmd>`** (nombre del comando sin prefijo `duck-`) como fallback defensivo cuando no hay clave.
-- `<filename>` mantiene la forma `<JIRA-KEY>_<cmd>.<ext>` o `<slug>_<cmd>.<ext>` cuando no hay key.
+El valor configurado en `<config.output_dir>` (p.ej. `plan.output_dir`, `audit.export_dir`, `review.export_dir`, `analyze.export_dir`) es **relativo a `$PROJECT_ROOT`** salvo que empiece por `/` (absoluto).
+
+| Valor en config | `$PROJECT_ROOT` | Path resuelto |
+|---|---|---|
+| `.` (default) | `/.../new-admin` | `/.../new-admin` |
+| `docs` | `/.../new-admin` | `/.../new-admin/docs` |
+| `docs` | `/.../civitatis` | `/.../civitatis/docs` |
+| `reports/duck` | `/.../new-admin` | `/.../new-admin/reports/duck` |
+| `/tmp/exports` (absoluto) | (cualquiera) | `/tmp/exports` |
+| `~/exports` | (cualquiera) | expandir `~` con `$HOME`, luego se considera absoluto |
+
+Esto permite que **un mismo valor de config (`docs`) produzca outputs dentro del proyecto activo** sin importar desde dónde se invoque el comando, ni si estoy en new-admin o en old-admin.
+
+### Resolución de `<carpeta>`
+
+- **`<JIRA-KEY>`** cuando el comando tiene clave de Jira disponible (caso normal).
+- **`<cmd>`** (nombre del comando sin prefijo `duck-`) como fallback defensivo cuando no hay clave.
+
+### Resolución de `<filename>`
+
+`<JIRA-KEY>_<cmd>.<ext>` cuando hay key. `<slug>_<cmd>.<ext>` cuando no hay key.
+
+### Comandos sin contexto de proyecto
+
+Si un comando que exporta no tiene `$PROJECT_ROOT` definido (p.ej. `duck-sync-docs all` invocado fuera de cualquier proyecto, escribiendo en cada uno):
+
+- Para cada proyecto destino, **resolver `<output_dir>` contra el path de ESE proyecto** (`project.new_admin_path`, `project.old_admin_path`).
+- Si el comando opera sin proyecto y `<output_dir>` es relativo → resolver contra `$PWD`. Este caso es excepcional; preferir paths absolutos para comandos project-agnostic con export.
 
 ## Procedimiento obligatorio
 
@@ -29,14 +52,23 @@ Cualquier skill que exporte debe:
 
 ## Ejemplos
 
+Con `plan.output_dir = docs` (relativo) y `$PROJECT_ROOT = /.../new-admin`:
+
 | Comando | Path resultante |
 |---|---|
-| `duck-analyze PANA-123` (opción `e`) | `<analyze.export_dir>/PANA-123/PANA-123_analyze.<ext>` |
-| `duck-plan PANA-123` | `<plan.output_dir>/PANA-123/PANA-123_plan.<ext>` |
-| `duck-review PANA-123` (export=true) | `<review.export_dir>/PANA-123/PANA-123_review.<ext>` |
-| `duck-audit --branch` (rama `feature/PANA-123-foo`) | `<audit.export_dir>/PANA-123/PANA-123_audit.<ext>` |
-| `duck-audit src/X.php` (sin key) | `<audit.export_dir>/audit/X.php_audit.<ext>` |
-| `duck-audit all` (sin key) | `<audit.export_dir>/audit/all_audit.<ext>` |
+| `duck-analyze PANA-123` (opción `e`) | `/.../new-admin/docs/PANA-123/PANA-123_analyze.<ext>` |
+| `duck-plan PANA-123` | `/.../new-admin/docs/PANA-123/PANA-123_plan.<ext>` |
+| `duck-review PANA-123` (export=true) | `/.../new-admin/docs/PANA-123/PANA-123_review.<ext>` |
+| `duck-audit --branch` (rama `feature/PANA-123-foo`) | `/.../new-admin/docs/PANA-123/PANA-123_audit.<ext>` |
+| `duck-audit src/X.php` (sin key) | `/.../new-admin/docs/audit/X.php_audit.<ext>` |
+
+El mismo config funciona contra old-admin sin tocar nada: si `$PROJECT_ROOT = /.../civitatis`, los outputs van a `/.../civitatis/docs/...`.
+
+Con `plan.output_dir = /tmp/exports` (absoluto):
+
+| Comando | Path resultante |
+|---|---|
+| `duck-plan PANA-123` (desde new-admin o old-admin) | `/tmp/exports/PANA-123/PANA-123_plan.<ext>` |
 
 ## Por qué
 
