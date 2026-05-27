@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# rubber-duck git hook: pre-push
+#
+# Comportamiento:
+#   - Lee git.hooks.pre_push_enabled de ~/.rubber-duck/config.json
+#   - Si false (default) -> exit 0 inmediatamente.
+#   - Si true: extrae la JIRA-KEY del nombre de rama y ejecuta duck-review.
+#     Si la rama no tiene JIRA-KEY -> exit 0 (silencioso).
+#     Si duck-review devuelve 🔴 -> bloquea el push.
+
+set -uo pipefail
+
+CONFIG="$HOME/.rubber-duck/config.json"
+
+# 1. Flag
+enabled="false"
+if [[ -f "$CONFIG" ]] && command -v jq >/dev/null 2>&1; then
+  enabled="$(jq -r '.git.hooks.pre_push_enabled // false' "$CONFIG" 2>/dev/null)"
+fi
+[[ "$enabled" == "true" ]] || exit 0
+
+# 2. JIRA-KEY desde el nombre de rama
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+jira_key="$(printf '%s' "$branch" | grep -oE '[A-Z]+-[0-9]+' | head -1 || true)"
+if [[ -z "$jira_key" ]]; then
+  exit 0  # sin key no podemos revisar — salida silenciosa
+fi
+
+# 3. duck-review en $PATH?
+if ! command -v duck-review >/dev/null 2>&1; then
+  echo "🦆 pre-push (rubber-duck): duck-review no está en \$PATH — saltado." >&2
+  exit 0
+fi
+
+echo "🦆 pre-push (rubber-duck): ejecutando duck-review $jira_key…"
+duck-review "$jira_key"
+rc=$?
+if (( rc != 0 )); then
+  echo "🦆 pre-push (rubber-duck): review reportó bloqueantes (exit $rc)." >&2
+  echo "   Para forzar el push: git push --no-verify" >&2
+  exit "$rc"
+fi
+
+exit 0

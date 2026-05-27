@@ -49,6 +49,9 @@ declare -A CONFIG_DEFAULTS=(
   ["git.auto_commit_after"]="audit"
   ["git.commit_message_format"]="jira"
   ["git.auto_push"]="false"
+  ["git.hooks.pre_commit_enabled"]="false"
+  ["git.hooks.pre_push_enabled"]="false"
+  ["git.hooks.post_merge_enabled"]="false"
   ["output.language"]="es"
 )
 
@@ -73,6 +76,9 @@ declare -A CONFIG_ALLOWED=(
   ["git.auto_commit_after"]="implement|review|audit"
   ["git.commit_message_format"]="jira|conventional|custom"
   ["git.auto_push"]="true|false"
+  ["git.hooks.pre_commit_enabled"]="true|false"
+  ["git.hooks.pre_push_enabled"]="true|false"
+  ["git.hooks.post_merge_enabled"]="true|false"
   ["output.language"]="es|en"
 )
 
@@ -97,6 +103,9 @@ declare -A CONFIG_DESCRIPTIONS=(
   ["git.auto_commit_after"]="En que paso se dispara el commit automatico"
   ["git.commit_message_format"]="Formato del mensaje de commit"
   ["git.auto_push"]="Hace push automatico tras el commit"
+  ["git.hooks.pre_commit_enabled"]="Activa el hook git pre-commit instalado en el repo del proyecto (corre duck-audit / bin/pre-commit sobre los staged). Default off para no ralentizar commits."
+  ["git.hooks.pre_push_enabled"]="Activa el hook git pre-push (corre duck-review sobre la JIRA-KEY inferida de la rama). Default off."
+  ["git.hooks.post_merge_enabled"]="Activa el hook git post-merge (corre duck-sync-docs all tras pull/merge). Default off."
   ["output.language"]="Idioma de los textos y reportes generados"
 )
 

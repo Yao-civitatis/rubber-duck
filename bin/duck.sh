@@ -56,6 +56,11 @@ if [[ "$cmd" == "help" ]]; then
   exec "$RUBBER_DUCK_HOME/bin/lib/help.sh" "$@"
 fi
 
+# duck-install-hooks es 100% bash (copia archivos a .git/hooks/).
+if [[ "$cmd" == "install-hooks" ]]; then
+  exec "$RUBBER_DUCK_HOME/hooks/install-hooks.sh" "$@"
+fi
+
 # duck-config: list/get/set/reset → bash; setup → Claude.
 if [[ "$cmd" == "config" ]]; then
   sub="${1:-list}"
