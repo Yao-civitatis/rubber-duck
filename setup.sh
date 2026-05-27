@@ -347,18 +347,58 @@ else
 fi
 
 echo "5/5 Configuración personal…"
+FIRST_TIME=0
 if [[ ! -f "$HOME/.rubber-duck/config.json" ]]; then
-  echo "    No existe ~/.rubber-duck/config.json. El asistente de configuración"
-  echo "    se lanzará automáticamente la primera vez que ejecutes un comando duck-*."
+  FIRST_TIME=1
+  echo "    Primera instalación detectada (~/.rubber-duck/config.json no existe)."
 else
   echo "    ✓ ~/.rubber-duck/config.json ya existe."
 fi
 
 maybe_install_hooks
 
+# -----------------------------------------------------------------------------
+# 7. Aviso final + recarga del shell
+# -----------------------------------------------------------------------------
+
 echo
-echo "✓ Instalación completada."
-echo "  Abre una terminal nueva o ejecuta:"
-echo "    source $RCFILE"
-echo "  Luego prueba:"
-echo "    duck-help"
+echo "════════════════════════════════════════════════════════════════════"
+echo "  ✓ Instalación completada."
+echo "════════════════════════════════════════════════════════════════════"
+
+if (( FIRST_TIME )); then
+  cat <<'EOF'
+
+  🦆 Primera instalación de rubber-duck en este sistema.
+
+     Próximo paso recomendado: lanza el asistente de configuración
+     para definir idioma, paths de proyectos y (opcional) los MCPs de
+     Atlassian y de base de datos.
+
+         duck-config setup
+
+EOF
+fi
+
+# Recarga del shell (interactivo). Si stdin no es TTY, salta (CI / automation).
+if [[ -t 0 && -t 1 ]]; then
+  read -r -p "  ¿Recargar el shell ahora para activar los comandos duck-*? [s/N] " RELOAD_ANS
+  case "${RELOAD_ANS,,}" in
+    s|si|sí|y|yes)
+      echo "  🦆 Recargando shell… (los duck-* estarán en \$PATH al volver al prompt)"
+      # Reemplaza el proceso actual con un shell de login del usuario.
+      # En el nuevo shell, el rcfile se ejecuta y RUBBER_DUCK_HOME + PATH quedan exportados.
+      exec "${SHELL:-/bin/bash}" -l
+      ;;
+    *)
+      echo
+      echo "  Recarga manualmente con:   source $RCFILE"
+      echo "  O abre una terminal nueva."
+      echo "  Luego prueba:               duck-help"
+      ;;
+  esac
+else
+  echo
+  echo "  Recarga el shell manualmente:  source $RCFILE"
+  echo "  Luego prueba:                  duck-help"
+fi
