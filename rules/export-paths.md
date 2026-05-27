@@ -2,6 +2,8 @@
 
 **Aplica a:** cualquier comando `duck-*` que persista artefactos a disco (planes, informes, exports de análisis, etc.).
 
+**Excepción documentada:** `duck-sync-docs` **no** sigue esta regla. Sus outputs viven dentro del repo de rubber-duck (`$RUBBER_DUCK_HOME/docs/<proyecto>/`), no en el proyecto sincronizado. Motivo: son docs internas de la herramienta sobre los proyectos que opera; meterlas en `new-admin/docs/` o `civitatis/docs/` contamina repos que tienen su propio contenido en `docs/`. Ver `skills/docs-sync/SKILL.md` §"Destino de los archivos generados".
+
 ## Patrón
 
 ```

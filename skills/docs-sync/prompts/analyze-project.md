@@ -1,6 +1,6 @@
 # Prompt — Análisis del código real → `project-snapshot.md`
 
-Genera un snapshot estructural del proyecto leyendo el código fuente, manifests y configuración. Salida: `<target-root>/docs/<proyecto>/project-snapshot.md`.
+Genera un snapshot estructural del proyecto leyendo el código fuente, manifests y configuración. Salida: `$RUBBER_DUCK_HOME/docs/<proyecto>/project-snapshot.md`.
 
 ## Output común (ambos proyectos)
 

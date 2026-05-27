@@ -26,19 +26,25 @@ duck-sync-docs                 # equivalente a all
 
 Carga el skill `$RUBBER_DUCK_HOME/skills/docs-sync/SKILL.md`. Resumen:
 
-1. **Resuelve paths de cada proyecto** desde `$PROJECT_ROOT/$PROJECT_TYPE` (si coincide con el target) o desde `~/.rubber-duck/config.json` (`project.new_admin_path`, `project.old_admin_path`). Si no se resuelve → skip ese proyecto con motivo.
+1. **Resuelve los paths de lectura** de cada proyecto desde `$PROJECT_ROOT/$PROJECT_TYPE` (si coincide con el target) o desde `~/.rubber-duck/config.json` (`project.new_admin_path`, `project.old_admin_path`). Si no se resuelve → skip ese proyecto con motivo.
 2. **Confluence (solo new-admin):**
    - Lee IDs de `mcp/atlassian/page-ids.json` (backend `2389508098`, frontend `2449342481`).
    - Fetch + conversión via `prompts/sync-confluence.md`.
-   - Escribe `docs/new-admin/backend-standards.md` y `frontend-standards.md`.
+   - Escribe `$RUBBER_DUCK_HOME/docs/new-admin/backend-standards.md` y `frontend-standards.md`.
    - **Skip total para old-admin.** No se generan standards artificiales.
 3. **Análisis de código:**
-   - new-admin: recorre `app/`, `config/`, `dev/vue/`, lee manifests, cita `.claude/*` cuando existe.
-   - old-admin: **restringido al scope `/admin`** (whitelist). Banner "modo mantenimiento" al inicio del snapshot.
-   - Escribe `docs/<proyecto>/project-snapshot.md` via `prompts/analyze-project.md`.
+   - new-admin: recorre `app/`, `config/`, `dev/vue/` del repo new-admin, lee manifests, cita `.claude/*` cuando existe.
+   - old-admin: lectura **restringida al scope `/admin`** del repo civitatis (whitelist). Banner "modo mantenimiento" al inicio del snapshot.
+   - Escribe `$RUBBER_DUCK_HOME/docs/<proyecto>/project-snapshot.md` via `prompts/analyze-project.md`.
 4. **Diff report:** compara con snapshot anterior via `prompts/diff-report.md`. Resumen accionable.
-5. **Actualiza `docs/last-sync.json`** con fecha + proyectos + cambios.
+5. **Actualiza `$RUBBER_DUCK_HOME/docs/last-sync.json`** (archivo único con ambos proyectos) con fecha + estado + cambios.
 6. **Resumen al usuario.**
+
+### Destino de los archivos generados
+
+Todos los outputs viven **dentro del repo de rubber-duck**, no en los proyectos sincronizados. Esto evita contaminar `new-admin/docs/` o `civitatis/docs/` (que tienen su propio contenido) y mantiene la documentación interna de la herramienta centralizada.
+
+Esta es una **excepción intencionada** a la regla `rules/export-paths.md` (que sí aplica a `duck-plan`, `duck-review`, `duck-analyze`, `duck-audit`).
 
 ## Reglas universales aplicables
 

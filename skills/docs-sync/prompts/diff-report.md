@@ -45,9 +45,11 @@ Máximo 10 bullets por proyecto. Si hay más, agrupar en familias:
 - `12 paquetes actualizados (ver tablas §1)`
 - `3 carpetas añadidas, 1 eliminada (ver §2)`
 
-## Persistencia en `docs/last-sync.json`
+## Persistencia en `$RUBBER_DUCK_HOME/docs/last-sync.json`
 
-Estructura completa del archivo (sobrescribir en cada run):
+Archivo único en el repo de rubber-duck con el estado de ambos proyectos. Si solo se sincronizó uno en este run, preservar la entrada del otro proyecto leyendo el JSON previo.
+
+Estructura completa del archivo:
 
 ```json
 {

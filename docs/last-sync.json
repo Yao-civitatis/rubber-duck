@@ -1,0 +1,23 @@
+{
+  "last_sync": "2026-05-27T00:00:00Z",
+  "projects": {
+    "new-admin": {
+      "confluence_updated": true,
+      "snapshot_updated": true,
+      "changes": [
+        "Primer snapshot — sin diff disponible.",
+        "Confluence backend (id 2389508098) sincronizado a docs/new-admin/backend-standards.md.",
+        "Confluence frontend (id 2449342481) sincronizado a docs/new-admin/frontend-standards.md."
+      ]
+    },
+    "old-admin": {
+      "confluence_updated": false,
+      "snapshot_updated": true,
+      "changes": [
+        "Primer snapshot — sin diff disponible.",
+        "Scope restringido a paths del módulo /admin (whitelist en skills/project-context/old_admin.md).",
+        "Confluence omitido por política de mantenimiento."
+      ]
+    }
+  }
+}

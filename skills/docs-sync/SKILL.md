@@ -22,23 +22,27 @@ Sin argumento → comportamiento equivalente a `all`.
 - `$RUBBER_DUCK_HOME/rules/self-contained.md` → cero paths externos. Todo lo necesario vive en el repo.
 - `$RUBBER_DUCK_HOME/rules/operational-restrictions.md` → R1 (Jira RO en este flujo: solo lectura de Confluence), R2 (sin tocar BBDD), política old-admin (sin Confluence ni standards artificiales).
 
-## Resolución de paths
+## Destino de los archivos generados
 
-Para cada proyecto a sincronizar (`new-admin` y/o `old-admin`):
+`duck-sync-docs` es una **excepción** a la regla general `rules/export-paths.md`. Los artefactos no van al proyecto sincronizado: viven todos dentro del propio repo de `rubber-duck`, agrupados por proyecto:
 
-1. Si `$PROJECT_ROOT` está definido y `$PROJECT_TYPE` coincide con el proyecto a sincronizar → usar `$PROJECT_ROOT` como **target root**.
+- new-admin → `$RUBBER_DUCK_HOME/docs/new-admin/{backend-standards,frontend-standards,project-snapshot}.md`
+- old-admin → `$RUBBER_DUCK_HOME/docs/old-admin/project-snapshot.md`
+- Estado global: `$RUBBER_DUCK_HOME/docs/last-sync.json` (un único archivo con ambos proyectos)
+
+Razón: estos docs son la "fuente de verdad interna" de rubber-duck sobre los proyectos que opera. No deben contaminar los repos de new-admin / civitatis (que tienen su propio `docs/` con otras cosas).
+
+## Resolución de los proyectos a leer
+
+Para cada proyecto a sincronizar (`new-admin` y/o `old-admin`), resolver el path del repo **leído** (no de escritura):
+
+1. Si `$PROJECT_ROOT` está definido y `$PROJECT_TYPE` coincide con el proyecto a sincronizar → usar `$PROJECT_ROOT` como **read root**.
 2. Si no, leer `~/.rubber-duck/config.json`:
-   - new-admin → `project.new_admin_path` como **target root**.
-   - old-admin → `project.old_admin_path` como **target root**.
+   - new-admin → `project.new_admin_path` como **read root**.
+   - old-admin → `project.old_admin_path` como **read root**.
 3. Si el valor es vacío o el directorio no existe → **abortar para ese proyecto** con error claro. No inventar paths.
 
-Los archivos generados se escriben siempre **dentro del target root** del proyecto correspondiente:
-
-- new-admin → `<target-root-new-admin>/docs/new-admin/{backend-standards,frontend-standards,project-snapshot}.md`
-- old-admin → `<target-root-old-admin>/docs/old-admin/project-snapshot.md`
-- `<target-root-<proyecto>>/docs/last-sync.json`
-
-Esta resolución sigue el espíritu de `rules/export-paths.md`: paths relativos viven dentro del proyecto al que pertenecen.
+El **read root** se usa para leer composer.json, package.json, recorrer la estructura, leer `.claude/*`, etc. Nunca se escribe en él.
 
 ## Diferencias por proyecto
 
@@ -49,14 +53,14 @@ Esta resolución sigue el espíritu de `rules/export-paths.md`: paths relativos 
 - Para cada ID:
   - Llamar al MCP de Atlassian para obtener el contenido (formato `storage` o `atlas_doc_format`).
   - Convertir a markdown limpio siguiendo `$RUBBER_DUCK_HOME/skills/docs-sync/prompts/sync-confluence.md`.
-  - Escribir a `<target-root>/docs/new-admin/backend-standards.md` o `frontend-standards.md`.
+  - Escribir a `$RUBBER_DUCK_HOME/docs/new-admin/backend-standards.md` o `frontend-standards.md`.
 - Si la lectura falla (sin permisos, sin red), registrar el error y continuar con el análisis de código.
 
 **Análisis de código:**
 - Lee `composer.json`, `composer.lock`, `dev/package.json`, `dev/package-lock.json`, `phpstan.dist.neon`, `phparkitect.php`, etc.
 - Recorre la estructura `app/`, `config/`, `dev/vue/`, etc.
 - Lee `$PROJECT_ROOT/.claude/project-context.md`, `domain-index.md`, `refactoring-state.md` si existen y los cita (no duplica).
-- Genera `<target-root>/docs/new-admin/project-snapshot.md` siguiendo `prompts/analyze-project.md`.
+- Genera `$RUBBER_DUCK_HOME/docs/new-admin/project-snapshot.md` siguiendo `prompts/analyze-project.md`.
 
 ### old-admin
 
@@ -87,7 +91,7 @@ A partir del argumento (`new-admin` | `old-admin` | `all` | vacío).
    - Recoger lista de archivos escritos.
 3. **Análisis del código:**
    - Aplicar `prompts/analyze-project.md`.
-   - Escribir `<target-root>/docs/<proyecto>/project-snapshot.md`.
+   - Escribir `$RUBBER_DUCK_HOME/docs/<proyecto>/project-snapshot.md`.
 
 ### Paso 3 — Diff report
 
@@ -100,9 +104,9 @@ new-admin:
   - 0 cambios en backend-standards.md vs Confluence
 ```
 
-### Paso 4 — Actualizar `docs/last-sync.json`
+### Paso 4 — Actualizar `$RUBBER_DUCK_HOME/docs/last-sync.json`
 
-Estructura (root del repo, dentro de `docs/`):
+**Un único archivo** con el estado de ambos proyectos:
 
 ```json
 {
@@ -123,6 +127,8 @@ Estructura (root del repo, dentro de `docs/`):
 ```
 
 `confluence_updated = false` para old-admin **siempre** (no aplica).
+
+Si en este run solo se sincronizó un proyecto (p.ej. `duck-sync-docs new-admin`), se actualiza solo esa entrada y se preserva la otra del archivo previo (si existe).
 
 ### Paso 5 — Resumen al usuario
 
