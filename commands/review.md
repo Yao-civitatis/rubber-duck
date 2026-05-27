@@ -46,7 +46,7 @@ Carga el skill `$RUBBER_DUCK_HOME/skills/task-reviewer/SKILL.md` y sigue su fluj
 |---|---|---|
 | `review.export` | `false` | Si `true`, guarda el informe a archivo |
 | `review.export_format` | `md` | `md`, `html`, `json`, `txt` |
-| `review.export_dir` | `.` | Directorio destino |
+| `review.export_dir` | `.` | Raíz del directorio destino. Path final: `<review.export_dir>/<JIRA-KEY>/<JIRA-KEY>_review.<ext>` (regla universal §2.quater) |
 | `review.update_jira` | `true` | Si `true`, ofrece postear comentario tras confirmación. Si `false`, ni siquiera pregunta. |
 | `output.language` | `es` | Idioma del informe |
 

@@ -52,19 +52,34 @@ Sigue el formato definido en `$RUBBER_DUCK_HOME/templates/planning-template.md`,
 
 ### Paso 4 — Persistencia
 
-1. Determinar nombre y formato:
-   - `nombre = "<JIRA-KEY>_plan.<ext>"` donde `<ext>` viene de `plan.output_format` (default `md`).
-   - `directorio = plan.output_dir` (default `.`).
-2. Si el archivo ya existe → preguntar al usuario:
+Sigue la **convención universal de paths de export** (ver §2.quater del plan):
+
+```
+<plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>
+```
+
+donde:
+
+- `<plan.output_dir>` viene de config (default `.`).
+- `<ext>` viene de `plan.output_format` (default `md`).
+- `<JIRA-KEY>` es la clave del ticket (siempre disponible para `duck-plan`).
+- Si por algún motivo no hubiera key (defensivo), usar `<plan.output_dir>/plan/plan.<ext>`.
+
+Procedimiento:
+
+1. Calcular `dest_dir = "<plan.output_dir>/<JIRA-KEY>"`.
+2. `mkdir -p "$dest_dir"`.
+3. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_plan.<ext>"`.
+4. Si `$dest_file` ya existe → preguntar:
    ```
-   Ya existe <archivo>. ¿Qué hago?
+   Ya existe <ruta>. ¿Qué hago?
      [s] Sobrescribir
      [b] Crear backup .bak y sobrescribir
      [N] Cancelar
    > _
    ```
-3. Escribe el archivo.
-4. Confirma: `✓ Plan guardado en <ruta>`.
+5. Escribe el archivo.
+6. Confirma: `✓ Plan guardado en <ruta>`.
 
 ### Paso 5 — Salida
 

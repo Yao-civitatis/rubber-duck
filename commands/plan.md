@@ -13,8 +13,13 @@ Ejemplo:
 ```bash
 cd ~/proyectos/tilt/tilts/new-admin
 duck-plan PANA-123
-# → genera ./PANA-123_plan.md
+# → genera <plan.output_dir>/PANA-123/PANA-123_plan.md
+#   p.ej. ./PANA-123/PANA-123_plan.md con defaults
 ```
+
+## Convención de paths de export
+
+Sigue la regla universal §2.quater: `<plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>`. Los artefactos de un mismo ticket viven en una sola carpeta `<JIRA-KEY>/`.
 
 ## Comportamiento
 

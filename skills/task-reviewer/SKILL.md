@@ -76,14 +76,25 @@ Imprime el informe completo en stdout con un encabezado claro.
 
 ### Paso 7 — Export (opcional)
 
-Si `review.export = true`:
+Si `review.export = true`, sigue la **convención universal de paths de export** (ver §2.quater del plan):
 
-1. Determinar formato (`review.export_format`: `md`, `html`, `json`, `txt`).
-2. Determinar destino (`review.export_dir` + `<JIRA-KEY>_review.<ext>`).
-3. Escribir archivo.
-4. Confirmar: `✓ Informe guardado en <ruta>`.
+```
+<review.export_dir>/<JIRA-KEY>/<JIRA-KEY>_review.<ext>
+```
 
-Si el archivo existe, preguntar sobrescribir / backup .bak / cancelar.
+donde:
+- `<review.export_dir>` viene de config (default `.`).
+- `<ext>` viene de `review.export_format` (default `md`).
+- `<JIRA-KEY>` siempre disponible (argumento obligatorio del comando).
+
+Procedimiento:
+
+1. Calcular `dest_dir = "<review.export_dir>/<JIRA-KEY>"`.
+2. `mkdir -p "$dest_dir"`.
+3. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_review.<ext>"`.
+4. Si `$dest_file` existe → preguntar sobrescribir / backup `.bak` / cancelar.
+5. Escribir archivo.
+6. Confirmar: `✓ Informe guardado en <ruta>`.
 
 ### Paso 8 — Update a Jira (opcional, requiere confirmación)
 
