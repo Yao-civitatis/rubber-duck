@@ -81,7 +81,7 @@ Default = `n`. Aceptación de respuestas:
 
 ### Paso 6 — Export a archivo (cuando el usuario eligió `e`)
 
-Sigue la **convención universal §2.quater**:
+Sigue la **convención universal de paths de export** definida en `$RUBBER_DUCK_HOME/CONVENTIONS.md` §1:
 
 ```
 <analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>

@@ -76,7 +76,7 @@ Imprime el informe completo en stdout con un encabezado claro.
 
 ### Paso 7 — Export (opcional)
 
-Si `review.export = true`, sigue la **convención universal de paths de export** (ver §2.quater del plan):
+Si `review.export = true`, sigue la **convención universal de paths de export** definida en `$RUBBER_DUCK_HOME/CONVENTIONS.md` §1:
 
 ```
 <review.export_dir>/<JIRA-KEY>/<JIRA-KEY>_review.<ext>

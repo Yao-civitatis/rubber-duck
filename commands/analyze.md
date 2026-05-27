@@ -27,7 +27,7 @@ Carga el skill `$RUBBER_DUCK_HOME/skills/jira-analyzer/SKILL.md` y sigue su fluj
 5. **Pide confirmación con 3 opciones** (`[s/n/e]`, default n):
    - `s` → actualizar Jira ahora.
    - `n` → no tocar nada, fin.
-   - `e` → exportar a archivo siguiendo `<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>` (formato `analyze.export_format`, idioma `output.language`). **Tras exportar, vuelve a preguntar solo por Jira (`s/N`)** para que puedas hacer las dos cosas si quieres, sin bucle.
+   - `e` → exportar a archivo siguiendo la convención de `$RUBBER_DUCK_HOME/CONVENTIONS.md` §1: `<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>` (formato `analyze.export_format`, idioma `output.language` per CONVENTIONS §2). **Tras exportar, vuelve a preguntar solo por Jira (`s/N`)** para que puedas hacer las dos cosas si quieres, sin bucle.
 6. Si en cualquier momento confirmas `s` → actualiza la descripción del ticket de forma idempotente:
    - Bloque entre `<!-- rubber-duck:start -->` y `<!-- rubber-duck:end -->`.
    - Si los marcadores ya existían → reemplaza solo el contenido entre ellos.

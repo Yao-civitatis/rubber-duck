@@ -19,7 +19,7 @@ duck-plan PANA-123
 
 ## Convención de paths de export
 
-Sigue la regla universal §2.quater: `<plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>`. Los artefactos de un mismo ticket viven en una sola carpeta `<JIRA-KEY>/`.
+Aplica la regla universal definida en `$RUBBER_DUCK_HOME/CONVENTIONS.md` §1: `<plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>`. Los artefactos de un mismo ticket viven en una sola carpeta `<JIRA-KEY>/`.
 
 ## Comportamiento
 

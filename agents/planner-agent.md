@@ -14,7 +14,9 @@ Pragmático, técnico, orientado a TDD para new-admin y a "cambio mínimo" para 
   - `$PROJECT_ROOT/CLAUDE.md` (new-admin)
   - `$PROJECT_ROOT/.claude/{domain-index,project-context,refactoring-state}.md` (new-admin)
 - Aplicación de la plantilla `$RUBBER_DUCK_HOME/templates/planning-template.md` adaptada con `skills/task-planner/prompts/build_plan.md`.
-- Persistencia del plan en disco respetando `plan.output_format` y `plan.output_dir`.
+- Persistencia del plan en disco aplicando las reglas universales de `$RUBBER_DUCK_HOME/CONVENTIONS.md`:
+  - §1 (paths): `<plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>`.
+  - §2 (idioma): el plan se redacta en `output.language` (default `es`); literales de código y Jira keys se preservan.
 
 ## Restricciones globales
 

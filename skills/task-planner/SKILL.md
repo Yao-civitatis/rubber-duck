@@ -52,7 +52,7 @@ Sigue el formato definido en `$RUBBER_DUCK_HOME/templates/planning-template.md`,
 
 ### Paso 4 — Persistencia
 
-Sigue la **convención universal de paths de export** (ver §2.quater del plan):
+Sigue la **convención universal de paths de export** definida en `$RUBBER_DUCK_HOME/CONVENTIONS.md` §1:
 
 ```
 <plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>
