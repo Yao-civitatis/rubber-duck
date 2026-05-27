@@ -52,6 +52,14 @@ Modificaciones admitidas solo en estos paths (todos relativos a `$PROJECT_ROOT`,
 
 **Validación obligatoria** antes de aplicar un cambio: el path destino debe coincidir con un prefijo de esta lista. Si no, **rechazar** la modificación con error claro.
 
+## Docs sincronizados por `duck-sync-docs`
+
+Las skills que necesiten el **snapshot del scope `/admin`** lo leen desde:
+
+- `~/.rubber-duck/docs/old-admin/project-snapshot.md`
+
+No existen `backend-standards.md` ni `frontend-standards.md` para old-admin (política mantenimiento-only — sin Confluence ni estándares formales). El snapshot es el único artefacto generado por `duck-sync-docs old-admin`. Detalles del modelo de 3 capas en `skills/docs-sync/SKILL.md`.
+
 ## Stack técnico
 
 | Tecnología | Versión / detalle |

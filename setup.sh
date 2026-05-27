@@ -273,10 +273,10 @@ echo "    bin              = $LOCAL_BIN"
 echo "    slash commands   = $LOCAL_SLASH"
 echo
 
-echo "1/4 Escribiendo bloque en $RCFILE…"
+echo "1/5 Escribiendo bloque en $RCFILE…"
 write_rcfile_block
 
-echo "2/4 Creando wrappers en $LOCAL_BIN…"
+echo "2/5 Creando wrappers en $LOCAL_BIN…"
 # Construye un set rápido con los comandos válidos para detectar huérfanos.
 declare -A VALID_CMDS=()
 for cmd in "${COMMANDS[@]}"; do
@@ -298,7 +298,7 @@ for path in "$LOCAL_BIN"/duck-*; do
 done
 shopt -u nullglob
 
-echo "3/4 Instalando slash commands en $LOCAL_SLASH…"
+echo "3/5 Instalando slash commands en $LOCAL_SLASH…"
 mkdir -p "$LOCAL_SLASH"
 # Aviso si LOCAL_SLASH es un symlink (otra herramienta del usuario ya gestiona ese dir).
 if [[ -L "$LOCAL_SLASH" ]]; then
@@ -325,7 +325,21 @@ for path in "$LOCAL_SLASH"/duck-*.md; do
 done
 shopt -u nullglob
 
-echo "4/4 Configuración personal…"
+echo "4/5 Sembrando docs en ~/.rubber-duck/docs/…"
+USER_DOCS_DIR="$HOME/.rubber-duck/docs"
+BUNDLE_DOCS_DIR="$RUBBER_DUCK_HOME/docs"
+if [[ -d "$USER_DOCS_DIR" ]]; then
+  echo "    ℹ️  $USER_DOCS_DIR ya existe — se preservan las actualizaciones del usuario."
+  echo "       (Para refrescar desde el bundle: rm -rf $USER_DOCS_DIR && ./setup.sh)"
+elif [[ -d "$BUNDLE_DOCS_DIR" ]]; then
+  mkdir -p "$HOME/.rubber-duck"
+  cp -R "$BUNDLE_DOCS_DIR" "$USER_DOCS_DIR"
+  echo "    ✓ Copiado $BUNDLE_DOCS_DIR/ → $USER_DOCS_DIR/"
+else
+  echo "    ⚠️  No existe $BUNDLE_DOCS_DIR/ — saltado. Ejecuta duck-sync-docs --bundle para crearlo."
+fi
+
+echo "5/5 Configuración personal…"
 if [[ ! -f "$HOME/.rubber-duck/config.json" ]]; then
   echo "    No existe ~/.rubber-duck/config.json. El asistente de configuración"
   echo "    se lanzará automáticamente la primera vez que ejecutes un comando duck-*."

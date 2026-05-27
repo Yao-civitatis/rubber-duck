@@ -8,18 +8,22 @@ Sincroniza la documentación de los proyectos en dos frentes paralelos:
 ## Uso
 
 ```
-duck-sync-docs [new-admin|old-admin|all]
+duck-sync-docs [--bundle] [new-admin|old-admin|all]
 ```
 
-Sin argumento = `all`.
+Sin argumento de proyecto = `all`. Sin `--bundle` = modo usuario.
 
 Ejemplos:
 
 ```bash
+# Modo usuario — actualiza ~/.rubber-duck/docs/
 duck-sync-docs new-admin       # solo new-admin (Confluence + snapshot)
 duck-sync-docs old-admin       # solo snapshot del scope /admin
 duck-sync-docs all             # ambos
 duck-sync-docs                 # equivalente a all
+
+# Modo maintainer — actualiza el bundle del repo (rara vez)
+duck-sync-docs --bundle all
 ```
 
 ## Comportamiento
@@ -40,9 +44,16 @@ Carga el skill `$RUBBER_DUCK_HOME/skills/docs-sync/SKILL.md`. Resumen:
 5. **Actualiza `$RUBBER_DUCK_HOME/docs/last-sync.json`** (archivo único con ambos proyectos) con fecha + estado + cambios.
 6. **Resumen al usuario.**
 
-### Destino de los archivos generados
+### Destino de los archivos generados — modelo de 3 capas
 
-Todos los outputs viven **dentro del repo de rubber-duck**, no en los proyectos sincronizados. Esto evita contaminar `new-admin/docs/` o `civitatis/docs/` (que tienen su propio contenido) y mantiene la documentación interna de la herramienta centralizada.
+`duck-sync-docs` aplica el modelo descrito en `skills/docs-sync/SKILL.md` §"Destino de los archivos generados":
+
+| Modo | `$DOCS_DIR` resuelto |
+|---|---|
+| Default (uso diario) | `~/.rubber-duck/docs/` |
+| `--bundle` (maintainer) | `$RUBBER_DUCK_HOME/docs/` |
+
+`~/.rubber-duck/docs/` es **la fuente de verdad runtime** consumida por planner, implementer, reviewer y audit. `$RUBBER_DUCK_HOME/docs/` es el bundle versionado que viaja con el repo; se copia a `~/.rubber-duck/docs/` al instalar con `setup.sh`.
 
 Esta es una **excepción intencionada** a la regla `rules/export-paths.md` (que sí aplica a `duck-plan`, `duck-review`, `duck-analyze`, `duck-audit`).
 

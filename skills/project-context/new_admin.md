@@ -22,6 +22,16 @@ y, **adicionalmente**, leen los archivos del propio repo new-admin que viven en 
 
 Este skill es un complemento, **no sustituye** los archivos del repo. En caso de conflicto, lo que dice `$PROJECT_ROOT/CLAUDE.md` y `$PROJECT_ROOT/.claude/*` **gana**.
 
+### Docs sincronizados por `duck-sync-docs`
+
+Las skills que necesiten las **normas de backend** o **frontend** sincronizadas desde Confluence (o el snapshot del código real) las leen desde:
+
+- `~/.rubber-duck/docs/new-admin/backend-standards.md` (Confluence id `2389508098`)
+- `~/.rubber-duck/docs/new-admin/frontend-standards.md` (Confluence id `2449342481`)
+- `~/.rubber-duck/docs/new-admin/project-snapshot.md` (análisis del código real)
+
+Estos archivos son la **fuente de verdad runtime** que el bundle versionado en `$RUBBER_DUCK_HOME/docs/` sembró al instalar. El usuario los actualiza con `duck-sync-docs new-admin`. Detalles del modelo de 3 capas en `skills/docs-sync/SKILL.md`.
+
 ## Stack técnico (verificado contra `composer.json` y `dev/package.json`)
 
 ### Backend

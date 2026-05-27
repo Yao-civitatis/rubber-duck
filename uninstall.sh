@@ -89,8 +89,8 @@ else
   echo "    (no había bloque que eliminar)"
 fi
 
-# 4. Configuración personal
-echo "4/4 Configuración personal…"
+# 4. Configuración personal + docs
+echo "4/4 Configuración personal y docs…"
 if [[ -d "$HOME/.rubber-duck" ]]; then
   echo "    Existe ~/.rubber-duck/ con tu configuración personal."
   read -r -p "    ¿Borrarla también? [s/N] " yn
