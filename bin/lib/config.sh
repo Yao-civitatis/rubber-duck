@@ -29,6 +29,8 @@ CONFIG_SCHEMA_VERSION=1
 # -----------------------------------------------------------------------------
 
 declare -A CONFIG_DEFAULTS=(
+  ["analyze.export_format"]="md"
+  ["analyze.export_dir"]="."
   ["plan.output_format"]="md"
   ["plan.output_dir"]="."
   ["project.new_admin_path"]=""
@@ -51,6 +53,8 @@ declare -A CONFIG_DEFAULTS=(
 )
 
 declare -A CONFIG_ALLOWED=(
+  ["analyze.export_format"]="md|html|json|txt"
+  ["analyze.export_dir"]="*"
   ["plan.output_format"]="md|html"
   ["plan.output_dir"]="*"
   ["project.new_admin_path"]="*"
@@ -73,8 +77,10 @@ declare -A CONFIG_ALLOWED=(
 )
 
 declare -A CONFIG_DESCRIPTIONS=(
+  ["analyze.export_format"]="Formato del archivo exportado por duck-analyze (opcion 'e' en la confirmacion)"
+  ["analyze.export_dir"]="Raiz del directorio destino para duck-analyze. Path final: <dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>"
   ["plan.output_format"]="Formato del archivo generado por duck-plan"
-  ["plan.output_dir"]="Directorio donde se guarda el plan"
+  ["plan.output_dir"]="Raiz del directorio destino para duck-plan. Path final: <dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>"
   ["project.new_admin_path"]="Ruta al codigo de new-admin (opcional: la detecta el dispatcher)"
   ["project.old_admin_path"]="Ruta al codigo de old-admin/civitatis (opcional: la detecta el dispatcher)"
   ["implement.auto_format"]="Ejecuta php-cs-fixer automaticamente tras implementar"

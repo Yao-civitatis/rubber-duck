@@ -20,6 +20,8 @@ Se activa cuando el dispatcher recibe `duck-config setup`, o cuando se detecta q
 | `project.new_admin_path` | `""` | ruta absoluta o vacío |
 | `project.old_admin_path` | `""` | ruta absoluta o vacío |
 | `output.language` | `es` | `es`, `en` |
+| `analyze.export_format` | `md` | `md`, `html`, `json`, `txt` |
+| `analyze.export_dir` | `.` | cualquier ruta |
 | `plan.output_format` | `md` | `md`, `html` |
 | `plan.output_dir` | `.` | cualquier ruta |
 | `implement.auto_format` | `false` | `true`, `false` |

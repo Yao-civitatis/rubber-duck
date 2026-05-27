@@ -62,20 +62,87 @@ Imprime el resultado completo en pantalla con un encabezado claro:
 ...
 ```
 
-### Paso 5 — Pedir confirmación
+### Paso 5 — Pedir confirmación (3 opciones)
 
 Pregunta literalmente:
 
 ```
-¿Añado este bloque a la descripción del ticket en Jira?
+¿Qué hago con el análisis?
   [s] Sí, actualizar Jira (append idempotente entre marcadores)
-  [N] No, dejar solo en pantalla
+  [n] No, dejar solo en pantalla
+  [e] Exportar a archivo (luego te vuelvo a preguntar por Jira)
 > _
 ```
 
-Default = `N`. Si el usuario no responde claramente `s`/`si`/`sí`/`y`/`yes`, asume No.
+Default = `n`. Aceptación de respuestas:
+- `s`/`si`/`sí`/`y`/`yes` → ir al Paso 7.
+- `e`/`export` → ir al Paso 6 (export) y luego **volver** al Paso 5b.
+- `n`/`no`/cualquier otra cosa → exit 0 sin tocar nada (Paso 8).
 
-### Paso 6 — Actualización idempotente (solo si confirmó)
+### Paso 6 — Export a archivo (cuando el usuario eligió `e`)
+
+Sigue la **convención universal §2.quater**:
+
+```
+<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>
+```
+
+donde:
+- `<analyze.export_dir>` viene de config (default `.`).
+- `<ext>` viene de `analyze.export_format` (`md` | `html` | `json` | `txt`, default `md`).
+- `<JIRA-KEY>` es la clave del ticket (siempre disponible).
+
+Procedimiento:
+
+1. Calcular `dest_dir = "<analyze.export_dir>/<JIRA-KEY>"`.
+2. `mkdir -p "$dest_dir"`.
+3. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_analyze.<ext>"`.
+4. Si `$dest_file` existe → preguntar sobrescribir / backup `.bak` / cancelar.
+5. **Idioma del contenido exportado** = `output.language` (default `es`). Reutiliza el bloque ya generado en el Paso 3.
+6. **Render según `<ext>`:**
+   - `md` → escribir el bloque tal cual (separador `---` arriba + bloque entre marcadores).
+   - `html` → convertir markdown a HTML simple. Incluir `<!DOCTYPE html>`, `<meta charset="UTF-8">`, título `<title>Analyze <JIRA-KEY></title>`.
+   - `json` → estructura:
+     ```json
+     {
+       "jira_key": "<KEY>",
+       "summary": "<summary>",
+       "generated_at": "<ISO-8601>",
+       "user_story": "<texto>",
+       "acceptance_criteria": [
+         {"title": "...", "gherkin": "Given... When... Then..."}
+       ],
+       "technical_considerations": {
+         "project": "new-admin | old-admin | ambos",
+         "module": "...",
+         "expected_changes": ["..."],
+         "risks": ["..."],
+         "dependencies": ["..."],
+         "applicable_policy": "..."
+       }
+     }
+     ```
+   - `txt` → strip markdown (sin asteriscos, sin headers `#`), texto plano legible.
+7. Escribir archivo.
+8. Confirmar al usuario:
+   ```
+   ✓ Análisis exportado a <ruta>
+   ```
+
+### Paso 5b — Re-preguntar confirmación (solo 2 opciones)
+
+Tras exportar, vuelve a preguntar **solo por Jira** (sin opción `e` esta vez, para evitar bucle):
+
+```
+Archivo exportado. ¿Actualizo también la descripción del ticket en Jira?
+  [s] Sí
+  [N] No
+> _
+```
+
+Default = `N`. Si confirma `s` → ir al Paso 7. Si rechaza → exit 0 (Paso 8) con el archivo ya guardado.
+
+### Paso 7 — Actualización idempotente (solo si confirmó)
 
 1. Toma la descripción **actual completa** que leíste en el Paso 1.
 2. Busca en ella un bloque delimitado por marcadores:
@@ -97,7 +164,7 @@ Default = `N`. Si el usuario no responde claramente `s`/`si`/`sí`/`y`/`yes`, as
 
 Si la escritura falla, muestra el error y conserva el texto generado en pantalla.
 
-### Paso 7 — Salida
+### Paso 8 — Salida
 
 - Salida exitosa: exit 0.
 - Si el usuario rechazó: exit 0 (no es error).
