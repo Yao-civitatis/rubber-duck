@@ -5,7 +5,32 @@ rubber-duck depende de dos servidores MCP (Model Context Protocol) para acceder 
 1. **Atlassian** — lee y escribe Jira; lee Confluence
 2. **Database** — consulta la BBDD compartida entre new-admin y old-admin (modo read-only obligatorio)
 
-Esta carpeta contiene plantillas (`.example.json`) que se subiran al repo y archivos reales (`config.json`, `claude_desktop_config.json`) que **nunca** se commitean (estan en `.gitignore`).
+## Layout
+
+Esta carpeta (`$RUBBER_DUCK_HOME/mcp/`) contiene **plantillas y referencia** que viven en el repo:
+
+```
+mcp/
+├── README.md                              (este archivo)
+├── atlassian/
+│   ├── config.example.json                (plantilla con valores Civitatis preconfigurados)
+│   └── page-ids.json                      (IDs reales de Confluence — referencia)
+├── database/
+│   └── config.example.json                (plantilla con campos a rellenar)
+└── claude_desktop_config.example.json     (plantilla para Claude Desktop)
+```
+
+Los **archivos con credenciales reales viven fuera del repo**, en `~/.rubber-duck/mcp/` (datos personales del usuario):
+
+```
+~/.rubber-duck/mcp/
+├── atlassian/
+│   └── config.json                        (tu token + datos Civitatis)
+└── database/
+    └── config.json                        (credenciales BBDD local/dev)
+```
+
+Ambos `config.json` se generan automáticamente en el wizard `duck-config setup` (pasos opcionales 9 y 10) o copiando las plantillas manualmente.
 
 ---
 
@@ -16,15 +41,24 @@ Esta carpeta contiene plantillas (`.example.json`) que se subiran al repo y arch
 1. Ve a https://id.atlassian.com/manage-profile/security/api-tokens
 2. **Create API token** → ponle un nombre (`rubber-duck`) → cópialo. Aparece **una sola vez**.
 
-### 1.2. Configura `atlassian/config.json`
+### 1.2. Configura `~/.rubber-duck/mcp/atlassian/config.json`
+
+**Opción recomendada (vía wizard):**
 
 ```bash
-cp atlassian/config.example.json atlassian/config.json
+duck-config setup     # incluye paso 9 "MCP Atlassian (opcional)" donde solo te pedirá el token
 ```
 
-Edita `atlassian/config.json` y reemplaza `TU_TOKEN_API_AQUI` por tu token real.
+**Opción manual:**
 
-Los demas campos (`url`, `cloud_id`, `jira_project_keys`, `confluence_space_key`, etc.) ya estan rellenos con los valores reales de Civitatis.
+```bash
+mkdir -p ~/.rubber-duck/mcp/atlassian
+cp $RUBBER_DUCK_HOME/mcp/atlassian/config.example.json ~/.rubber-duck/mcp/atlassian/config.json
+# Edita ~/.rubber-duck/mcp/atlassian/config.json y reemplaza TU_TOKEN_API_AQUI
+chmod 600 ~/.rubber-duck/mcp/atlassian/config.json
+```
+
+Los demas campos (`url`, `cloud_id`, `jira_project_keys`, `confluence_space_key`, etc.) ya estan rellenos con los valores reales de Civitatis en la plantilla.
 
 ### 1.3. IDs de paginas de Confluence
 
@@ -41,13 +75,22 @@ Los demas campos (`url`, `cloud_id`, `jira_project_keys`, `confluence_space_key`
 
 ## 2. Base de datos
 
-### 2.1. Configura `database/config.json`
+### 2.1. Configura `~/.rubber-duck/mcp/database/config.json`
+
+**Opción recomendada (vía wizard):**
 
 ```bash
-cp database/config.example.json database/config.json
+duck-config setup     # incluye paso 10 "MCP Database (opcional)" — te imprime la plantilla y la pega rellena
 ```
 
-Rellena los valores de conexion a la BBDD de desarrollo (Tilt) o staging. **No uses credenciales de produccion.**
+**Opción manual:**
+
+```bash
+mkdir -p ~/.rubber-duck/mcp/database
+cp $RUBBER_DUCK_HOME/mcp/database/config.example.json ~/.rubber-duck/mcp/database/config.json
+# Edita con credenciales de Tilt/dev — NUNCA producción
+chmod 600 ~/.rubber-duck/mcp/database/config.json
+```
 
 ### 2.2. Modo read-only obligatorio
 

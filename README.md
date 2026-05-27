@@ -49,13 +49,8 @@ chmod +x setup.sh
 # 3. Recargar shell
 source ~/.bashrc      # o source ~/.zshrc
 
-# 4. Configurar MCPs
-cp mcp/atlassian/config.example.json mcp/atlassian/config.json
-# editar mcp/atlassian/config.json con tu token
-cp mcp/database/config.example.json mcp/database/config.json
-# editar con credenciales locales (de Tilt, no de producción)
-
-# 5. Lanzar el asistente de configuración personal
+# 4. Lanzar el asistente de configuración personal
+#    (incluye pasos opcionales para configurar el MCP de Atlassian y el MCP de Database)
 duck-config setup
 ```
 

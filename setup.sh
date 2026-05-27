@@ -325,7 +325,14 @@ for path in "$LOCAL_SLASH"/duck-*.md; do
 done
 shopt -u nullglob
 
-echo "4/5 Sembrando docs en ~/.rubber-duck/docs/…"
+echo "4/5 Preparando ~/.rubber-duck/ (docs + mcp)…"
+mkdir -p "$HOME/.rubber-duck/mcp/atlassian" "$HOME/.rubber-duck/mcp/database"
+echo "    ✓ ~/.rubber-duck/mcp/atlassian/ y ~/.rubber-duck/mcp/database/ creados (vacíos por ahora)."
+echo "       Rellena los config.json con 'duck-config setup' o copiando manualmente:"
+echo "         cp $RUBBER_DUCK_HOME/mcp/atlassian/config.example.json ~/.rubber-duck/mcp/atlassian/config.json"
+echo "         cp $RUBBER_DUCK_HOME/mcp/database/config.example.json ~/.rubber-duck/mcp/database/config.json"
+echo
+echo "    Sembrando docs en ~/.rubber-duck/docs/…"
 USER_DOCS_DIR="$HOME/.rubber-duck/docs"
 BUNDLE_DOCS_DIR="$RUBBER_DUCK_HOME/docs"
 if [[ -d "$USER_DOCS_DIR" ]]; then

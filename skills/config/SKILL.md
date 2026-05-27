@@ -227,14 +227,98 @@ Si `3`: pide la plantilla y guárdala en `~/.rubber-duck/commit-template.txt`.
 > _
 ```
 
-### Paso 9 — Persistencia
+### Paso 9 — MCP Atlassian (opcional)
+
+```
+🦆 Configurar el MCP de Atlassian ahora?
+   Solo te pediré el TOKEN (URL, cloud_id, project keys, space están preconfigurados
+   con los valores reales de Civitatis). Tu token de https://id.atlassian.com/manage-profile/security/api-tokens.
+
+   1) Sí, lo introduzco ahora
+   2) Saltar (lo configuro más tarde)
+> _
+```
+
+Si elige `1`:
+
+```
+Token API (no se muestra al escribir, pega y enter):
+> _
+```
+
+Si el token llega vacío → tratar como "saltar" y avisar.
+
+Si llega un token:
+
+1. Leer la plantilla `$RUBBER_DUCK_HOME/mcp/atlassian/config.example.json`.
+2. Sustituir el placeholder `TU_TOKEN_API_AQUI` por el token real.
+3. Crear `~/.rubber-duck/mcp/atlassian/` si no existe.
+4. Escribir el JSON resultante a `~/.rubber-duck/mcp/atlassian/config.json` con permisos 600 (`chmod 600`).
+5. Confirmar: `✓ Token guardado en ~/.rubber-duck/mcp/atlassian/config.json (chmod 600).`
+
+Si el usuario salta este paso → no crear archivo. Avisar:
+```
+ℹ️  MCP de Atlassian sin configurar. Los comandos que lo usan
+   (duck-analyze, duck-review, duck-sync-docs, duck-standup, duck-debug con JIRA-KEY)
+   te avisarán y te dirán cómo configurarlo más tarde.
+```
+
+### Paso 10 — MCP Database (opcional)
+
+```
+🦆 Configurar el MCP de base de datos ahora?
+   Te imprimiré una plantilla JSON. Cópiala, rellena con tus credenciales (de Tilt/dev,
+   nunca de producción), y pégala completa.
+
+   1) Sí, lo introduzco ahora
+   2) Saltar (lo configuro más tarde)
+> _
+```
+
+Si elige `1`, imprimir la plantilla:
+
+```json
+{
+  "_comment": "Configuración para MCP de base de datos. Read-only obligatorio (regla R2).",
+  "host": "db.civitatis.local",
+  "port": 3306,
+  "database": "civitatis",
+  "user": "REEMPLAZAR_USUARIO",
+  "password": "REEMPLAZAR_PASSWORD",
+  "read_only": true,
+  "shared_with": ["new-admin", "old-admin"]
+}
+```
+
+Después:
+
+```
+Pega el JSON relleno (termina con una línea con solo un punto `.` para finalizar):
+> _
+```
+
+Validar el JSON pegado:
+
+- Debe ser JSON válido (`jq -e .` debe pasar).
+- Si no valida → mostrar el error y permitir reintentar (max 3 intentos).
+- Si pasa los 3 intentos → tratar como "saltar" con warning.
+
+Si valida:
+
+1. Crear `~/.rubber-duck/mcp/database/` si no existe.
+2. Escribir el JSON a `~/.rubber-duck/mcp/database/config.json` con permisos 600.
+3. Confirmar: `✓ Config guardado en ~/.rubber-duck/mcp/database/config.json (chmod 600).`
+
+Si salta → mismo aviso defensivo que con Atlassian, sobre `duck-db`.
+
+### Paso 11 — Persistencia
 
 1. Crea `~/.rubber-duck/` si no existe.
 2. Escribe el JSON respetando los valores recogidos. Para cada clave no respondida (Ctrl+C antes de su pregunta), usa el default de la tabla.
 3. Añade `"_version": 1` en la raíz del JSON.
 4. Muestra el resumen final equivalente a `duck-config list`.
 
-### Paso 10 — Cierre
+### Paso 12 — Cierre
 
 ```
 ✓ Configuración guardada en ~/.rubber-duck/config.json

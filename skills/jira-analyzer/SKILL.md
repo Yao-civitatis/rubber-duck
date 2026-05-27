@@ -18,6 +18,8 @@ Si `<JIRA-KEY>` no parece una clave válida (regex `^[A-Z]+-[0-9]+$`), responde 
 
 ### Paso 1 — Lectura del ticket
 
+Antes de empezar, verificar `~/.rubber-duck/mcp/atlassian/config.json`. Si no existe → avisar `⚠️ MCP de Atlassian sin configurar. Ejecuta 'duck-config setup' (paso MCP Atlassian) y reintenta.` y abortar con exit 1.
+
 Usa el MCP de Atlassian para leer el ticket:
 
 - `summary`

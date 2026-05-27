@@ -53,7 +53,9 @@ Texto markdown listo para copiar, encabezado con la fecha:
 
 ## Configuración relacionada
 
-Ninguna específica para este comando. Usa `mcp/atlassian/config.json` con el `team_custom_field` ya configurado.
+Ninguna específica para este comando. Usa `~/.rubber-duck/mcp/atlassian/config.json` (generado por `duck-config setup`) con el `team_custom_field` ya preconfigurado en la plantilla.
+
+Si el archivo no existe → el comando avisa con instrucciones y aborta.
 
 ## Errores y exit codes
 

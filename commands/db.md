@@ -98,10 +98,19 @@ Ejecutar manualmente:
 
 ## Configuración previa
 
-Antes de la primera invocación:
+Antes de la primera invocación, configura el MCP de base de datos en `~/.rubber-duck/mcp/database/config.json`. Opción recomendada:
 
 ```bash
-cp mcp/database/config.example.json mcp/database/config.json
-# editar con credenciales locales (de Tilt, no de producción)
-# read_only: true   ← obligatorio
+duck-config setup     # incluye paso opcional para el MCP de base de datos
 ```
+
+Opción manual:
+
+```bash
+cp $RUBBER_DUCK_HOME/mcp/database/config.example.json ~/.rubber-duck/mcp/database/config.json
+# edita con credenciales locales (de Tilt, no de producción)
+# read_only: true   ← obligatorio
+chmod 600 ~/.rubber-duck/mcp/database/config.json
+```
+
+Si el archivo no existe cuando se invoca `duck-db`, el comando se aborta con un aviso indicando cómo configurarlo.

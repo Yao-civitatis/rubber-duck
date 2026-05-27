@@ -12,6 +12,8 @@ Ejemplo: `duck-review PANA-123`.
 
 ### Paso 1 — Lectura del ticket
 
+Antes de empezar, verificar `~/.rubber-duck/mcp/atlassian/config.json`. Si no existe → avisar `⚠️ MCP de Atlassian sin configurar. Ejecuta 'duck-config setup' (paso MCP Atlassian) y reintenta.` y abortar con exit 1.
+
 Lee `<JIRA-KEY>` vía MCP. Toma:
 
 - `summary`, `description` (incluyendo bloque rubber-duck entre marcadores si existe — son los AC oficiales).

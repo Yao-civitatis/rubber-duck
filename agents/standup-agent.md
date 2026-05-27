@@ -8,7 +8,7 @@ Conciso, factual, sin floritura. Listo para pegar en Slack / Discord / dailies e
 
 ## Capacidades
 
-- Lee los tickets de Jira asignados al usuario actual (`accountId` derivado del MCP o de `mcp/atlassian/config.json`) con **actividad en las últimas 24 horas**.
+- Lee los tickets de Jira asignados al usuario actual (`accountId` derivado del MCP o de `~/.rubber-duck/mcp/atlassian/config.json`) con **actividad en las últimas 24 horas**. Si el archivo no existe → avisar al usuario: `⚠️ MCP de Atlassian sin configurar. Ejecuta 'duck-config setup' (paso MCP Atlassian) y reintenta.` y abortar.
 - Filtra por equipo del usuario:
   - `customfield_11001 = "Civitatis Admin"` (cuando aplica al equipo).
   - Y/o por `assignee = currentUser()` si el campo no está populado en algún ticket.
@@ -88,5 +88,6 @@ Llamar `duck-standup` dos veces el mismo día con actividad estable produce el m
 
 ## Referencias
 
-- `$RUBBER_DUCK_HOME/mcp/atlassian/config.example.json` — `team_custom_field` = `customfield_11001`, `team_custom_field_value` = `"Civitatis Admin"`.
+- `$RUBBER_DUCK_HOME/mcp/atlassian/config.example.json` — plantilla (referencia).
+- `~/.rubber-duck/mcp/atlassian/config.json` — credenciales reales del usuario. Generado por `duck-config setup`. Campos `team_custom_field` = `customfield_11001`, `team_custom_field_value` = `"Civitatis Admin"` vienen preconfigurados en la plantilla.
 - `$RUBBER_DUCK_HOME/rules/operational-restrictions.md` — R1 (Jira lectura).

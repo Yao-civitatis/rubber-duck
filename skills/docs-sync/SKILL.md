@@ -94,7 +94,8 @@ El **read root** se usa para leer composer.json, package.json, recorrer la estru
 ### new-admin
 
 **Confluence:**
-- Lee `mcp/atlassian/page-ids.json` → claves `new-admin.backend` (`2389508098`) y `new-admin.frontend` (`2449342481`).
+- Antes de empezar, verificar `~/.rubber-duck/mcp/atlassian/config.json`. Si no existe → avisar `⚠️ MCP de Atlassian sin configurar. Ejecuta 'duck-config setup' (paso MCP Atlassian) y reintenta.` y saltar la parte Confluence (continuar con análisis de código).
+- Lee `$RUBBER_DUCK_HOME/mcp/atlassian/page-ids.json` → claves `new-admin.backend` (`2389508098`) y `new-admin.frontend` (`2449342481`). Estos IDs viven en el repo (no son credenciales) y son la fuente de verdad sobre qué páginas sincronizar.
 - Para cada ID:
   - Llamar al MCP de Atlassian para obtener el contenido (formato `storage` o `atlas_doc_format`).
   - Convertir a markdown limpio siguiendo `$RUBBER_DUCK_HOME/skills/docs-sync/prompts/sync-confluence.md`.
