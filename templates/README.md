@@ -8,6 +8,7 @@ Esta carpeta contiene **copias locales** de plantillas genéricas que rubber-duc
 |---|---|---|---|---|
 | `planning-template.md` | `ai-development-rules/rules/templates/planning-template.md` | `71e8924` | 2026-05-27 | `skills/task-planner/` (formato del plan generado por `duck-plan`) |
 | `agents-exceptions-template.md` | `ai-development-rules/rules/templates/agents-exceptions-template.md` | `71e8924` | 2026-05-27 | `skills/code-audit/` (formato de `AGENTS.md` con excepciones reconocidas) |
+| `commit-template.example.txt` | (interno rubber-duck, F12) | n/a | n/a | Ejemplo de plantilla para `git.commit_message_format = custom`. Copia a `~/.rubber-duck/commit-template.txt` y edita. Variables: `{jira_key}`, `{title}`, `{summary}`, `{step}`. |
 
 ## Divergencias locales conocidas
 

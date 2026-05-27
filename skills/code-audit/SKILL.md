@@ -205,6 +205,21 @@ Procedimiento (idéntico a otros exporters):
 3. Renderizar según `audit.export_format` (`md` por defecto; `html`, `json`, `txt` también).
 4. Confirmar: `✓ Informe guardado en <ruta>`.
 
+### Paso 8.bis — Auto-commit (si aplica)
+
+Si el audit modificó archivos en el proyecto (caso raro — algunos fixers auto-correctores podrían escribir; lo habitual es que el audit sea read-only), delegar en `$RUBBER_DUCK_HOME/bin/lib/git.sh`:
+
+```bash
+"$RUBBER_DUCK_HOME/bin/lib/git.sh" \
+  audit \
+  "<JIRA-KEY o vacío>" \
+  "<título breve>" \
+  "<veredicto>" \
+  <archivo1> ...
+```
+
+El helper aplica `git.auto_commit_after = audit` y los formatos definidos en `git.commit_message_format`. En la mayoría de los casos no hay archivos a commitear (audit es lectura) y el helper sale sin hacer nada.
+
 ### Paso 9 — Resumen al usuario
 
 Pantalla final (siempre, exporte o no):

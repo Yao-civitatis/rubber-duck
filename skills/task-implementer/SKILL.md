@@ -120,12 +120,30 @@ Próximos pasos sugeridos:
 
 ### Paso 9 — Auto-commit (si aplica)
 
-Si `git.auto_commit = true` y `git.auto_commit_after = implement`:
+Delega en `$RUBBER_DUCK_HOME/bin/lib/git.sh` (vía Bash):
 
-1. Stage de los archivos tocados (no usar `git add .`).
-2. Generar mensaje según `git.commit_message_format` (`jira`, `conventional`, `custom`).
-3. `git commit` (sin `--no-verify`).
-4. Si `git.auto_push = true` → `git push`.
+```bash
+"$RUBBER_DUCK_HOME/bin/lib/git.sh" \
+  implement \
+  "<JIRA-KEY o vacío>" \
+  "<título breve del cambio>" \
+  "<resumen 1 línea o vacío>" \
+  <archivo1> <archivo2> ...
+```
+
+El helper:
+
+1. Lee `git.auto_commit`. Si `false` → no hace nada (exit 0).
+2. Lee `git.auto_commit_after`. Si `!= implement` → no hace nada.
+3. Stage de los archivos pasados como argumentos (no usa `git add .`).
+4. Construye el mensaje según `git.commit_message_format`:
+   - `jira` → `<KEY>: <título>`.
+   - `conventional` → `feat: <KEY> <título>`.
+   - `custom` → leído de `~/.rubber-duck/commit-template.txt` con variables `{jira_key}`, `{title}`, `{summary}`, `{step}`.
+5. `git commit` en `$PROJECT_ROOT`.
+6. Si `git.auto_push = true` → `git push`.
+
+No invocar manualmente `git add` / `git commit` desde el skill — usar siempre el helper.
 
 ## Restricciones (recordatorio)
 

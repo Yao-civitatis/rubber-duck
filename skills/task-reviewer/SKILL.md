@@ -114,7 +114,22 @@ Si `review.update_jira = true`:
 
 Si la escritura falla, mostrar error y conservar el informe en pantalla.
 
-### Paso 9 — Salida
+### Paso 9 — Auto-commit (si aplica)
+
+Si el veredicto es 🟢 o 🟡 (no 🔴) y la review modificó archivos en el proyecto (caso raro pero posible — p.ej. añadiendo notas en un README o ajustando comentarios), delegar en `$RUBBER_DUCK_HOME/bin/lib/git.sh`:
+
+```bash
+"$RUBBER_DUCK_HOME/bin/lib/git.sh" \
+  review \
+  "<JIRA-KEY>" \
+  "<título breve>" \
+  "<veredicto + nº hallazgos>" \
+  <archivo1> ...
+```
+
+El helper aplica `git.auto_commit_after = review` y los formatos definidos en `git.commit_message_format`. Para `review` solo se commitea si hay archivos cambiados; en el flujo normal de review (solo informe), nada que commitear.
+
+### Paso 10 — Salida
 
 - 🟢 Listo → exit 0.
 - 🟡 Listo con observaciones → exit 0.

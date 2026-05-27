@@ -101,7 +101,7 @@ declare -A CONFIG_DESCRIPTIONS=(
   ["review.update_jira"]="Ofrece anadir el resultado del review al ticket en Jira (siempre con confirmacion)"
   ["git.auto_commit"]="Hace commit automatico al terminar el paso indicado"
   ["git.auto_commit_after"]="En que paso se dispara el commit automatico"
-  ["git.commit_message_format"]="Formato del mensaje de commit"
+  ["git.commit_message_format"]="Formato del mensaje de commit. jira='KEY: title'. conventional='type: KEY title'. custom=usa ~/.rubber-duck/commit-template.txt con variables {jira_key} {title} {summary} {step} (ver templates/commit-template.example.txt)."
   ["git.auto_push"]="Hace push automatico tras el commit"
   ["git.hooks.pre_commit_enabled"]="Activa el hook git pre-commit instalado en el repo del proyecto (corre duck-audit / bin/pre-commit sobre los staged). Default off para no ralentizar commits."
   ["git.hooks.pre_push_enabled"]="Activa el hook git pre-push (corre duck-review sobre la JIRA-KEY inferida de la rama). Default off."
