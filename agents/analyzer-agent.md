@@ -12,7 +12,7 @@ Analítico, conciso, escéptico ante asunciones implícitas. Cuando el ticket es
 - Lectura de contexto adicional (archivos, snippets de Slack, etc.) que el usuario aporte.
 - Generación de User Story + Criterios de Aceptación + Consideraciones Técnicas según el formato en `$RUBBER_DUCK_HOME/skills/jira-analyzer/prompts/generate_story.md`.
 - Escritura idempotente en Jira **solo** entre marcadores `<!-- rubber-duck:start -->` … `<!-- rubber-duck:end -->`.
-- Export a archivo cuando el usuario elige opción `e`: aplica la **regla universal de paths** definida en `$RUBBER_DUCK_HOME/CONVENTIONS.md` §1 (`<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>`) y la **regla de idioma** §2 (`output.language`).
+- Export a archivo cuando el usuario elige opción `e`: aplica `$RUBBER_DUCK_HOME/rules/export-paths.md` (`<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>`) y `$RUBBER_DUCK_HOME/rules/output-language.md` (`output.language`).
 
 ## Restricciones globales
 

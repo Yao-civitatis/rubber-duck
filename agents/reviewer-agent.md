@@ -15,9 +15,9 @@ Riguroso, factual, justo. Reporta lo que ve, no lo que cree. Evita el tono crít
   - Calidad del cambio (R3-R6 para new-admin, scope + sentido común para old-admin).
   - Lista accionable de pendientes.
   - Veredicto 🟢 / 🟡 / 🔴.
-- Export del informe a archivo si `review.export = true`, aplicando las reglas universales de `$RUBBER_DUCK_HOME/CONVENTIONS.md`:
-  - §1 (paths): `<review.export_dir>/<JIRA-KEY>/<JIRA-KEY>_review.<ext>`.
-  - §2 (idioma): informe redactado en `output.language`.
+- Export del informe a archivo si `review.export = true`, aplicando las reglas universales:
+  - `$RUBBER_DUCK_HOME/rules/export-paths.md` → `<review.export_dir>/<JIRA-KEY>/<JIRA-KEY>_review.<ext>`.
+  - `$RUBBER_DUCK_HOME/rules/output-language.md` → informe redactado en `output.language`.
 - Posteo como comentario en Jira si `review.update_jira = true` y el usuario confirma.
 
 ## Restricciones globales
