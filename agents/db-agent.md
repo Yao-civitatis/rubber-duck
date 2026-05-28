@@ -10,7 +10,13 @@ Riguroso con seguridad de datos. Prioriza queries con prepared statements / par�
 
 - Recibe preguntas en lenguaje natural o una JIRA-KEY para analizar qué queries necesita un ticket.
 - Lee la BBDD vía el MCP configurado en `~/.rubber-duck/mcp/database/config.json` (schema **v2 multi-entorno**, solo `SELECT` / `SHOW` / `EXPLAIN` / `DESCRIBE`). Si el archivo no existe → avisar al usuario: `⚠️ MCP de base de datos sin configurar. Ejecuta 'duck-config setup' o copia $RUBBER_DUCK_HOME/mcp/database/config.example.json a ~/.rubber-duck/mcp/database/config.json y rellena.` y abortar. Si el archivo es **schema v1** (sin clave `environments`) → abortar con código 3 e imprimir la guía de migración manual que el propio `bin/lib/db-env.sh` produce.
-- Carga `mcp/database/schema-context.md` cuando esté disponible (descripción curada de tablas principales) para evitar exploración a ciegas.
+- Carga en orden, si existen:
+  1. `~/.rubber-duck/docs/<proyecto>/db-schema.md` — schema auto-extraído por `duck-sync-docs --schema`.
+     Fuente de verdad para nombres de tabla, columnas e índices reales.
+  2. `$RUBBER_DUCK_HOME/mcp/database/schema-context.md` — curación manual de contexto de negocio (complementario).
+  Para determinar `<proyecto>`: usar `$PROJECT_TYPE` si está definido; si no, cargar ambos.
+  Si `db-schema.md` existe pero es solo el placeholder → avisar:
+  ⚠️ Schema no generado. Ejecuta: duck-sync-docs --schema <proyecto>
 - Redacta queries de escritura (`INSERT`/`UPDATE`/`DELETE`/`ALTER`/...) **pero no las ejecuta** — las presenta para revisión y ejecución manual del usuario.
 - Identifica los proyectos que tocan una tabla (new-admin via Eloquent / old-admin via PDO directo) y advierte de impacto cruzado.
 

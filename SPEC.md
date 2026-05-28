@@ -60,6 +60,8 @@ El proyecto sobre el que opera tiene dos partes:
                              →  Confluence (solo new-admin) + análisis código real
                                  escribe en ~/.rubber-duck/docs/<proyecto>/
                                  --bundle para refrescar el bundle del repo (maintainer)
+                                 --schema [new-admin|old-admin|all] extrae db-schema.md
+                                   (tablas usadas + columnas/índices/DDL via DB read-only)
 ```
 
 ---
@@ -98,9 +100,11 @@ rubber-duck/
 │   │   ├── backend-standards.md     # snapshot Confluence (id 2389508098)
 │   │   ├── frontend-standards.md    # snapshot Confluence (id 2449342481)
 │   │   ├── upgrade-targets.md       # stack destino — manual (placeholder)
-│   │   └── project-snapshot.md      # snapshot código real
+│   │   ├── project-snapshot.md      # snapshot código real
+│   │   └── db-schema.md             # schema DB auto-extraído (duck-sync-docs --schema)
 │   ├── old-admin/
-│   │   └── project-snapshot.md      # solo snapshot; sin Confluence (política mantenimiento)
+│   │   ├── project-snapshot.md      # solo snapshot; sin Confluence (política mantenimiento)
+│   │   └── db-schema.md             # schema DB auto-extraído (scope /admin)
 │   └── last-sync.json
 ├── rules/                      # reglas transversales (citadas por skills/agents/commands)
 │   ├── README.md
@@ -135,7 +139,7 @@ rubber-duck/
 │   │   └── prompts/review.md
 │   ├── docs-sync/
 │   │   ├── SKILL.md
-│   │   └── prompts/{sync-confluence,analyze-project,diff-report}.md
+│   │   └── prompts/{sync-confluence,analyze-project,diff-report,extract-db-schema}.md
 │   ├── code-audit/
 │   │   ├── SKILL.md
 │   │   └── prompts/{phpstan,cs-fixer,arkitect,standards}.md
@@ -172,8 +176,8 @@ rubber-duck/
 ├── upgrade-status.json         # progreso de la migración de stack
 ├── last-post-merge-sync.log    # log del hook post-merge (si está activo)
 └── docs/                       # copia de rubber-duck/docs/, actualizada por duck-sync-docs
-    ├── new-admin/{backend-standards,frontend-standards,upgrade-targets,project-snapshot}.md
-    ├── old-admin/project-snapshot.md
+    ├── new-admin/{backend-standards,frontend-standards,upgrade-targets,project-snapshot,db-schema}.md
+    ├── old-admin/{project-snapshot,db-schema}.md
     └── last-sync.json
 ```
 
@@ -215,7 +219,7 @@ Comandos que instala:
 | `duck-plan` | Genera plan de implementación |
 | `duck-implement` | Implementa el código |
 | `duck-review` | Revisa el código vs requisitos |
-| `duck-sync-docs` | Sincroniza docs desde Confluence |
+| `duck-sync-docs` | Sincroniza docs desde Confluence + análisis código; `--schema` extrae `db-schema.md` desde la BBDD |
 | `duck-audit` | Audita el código |
 | `duck-config` | Gestiona la configuración personal |
 | `duck-help` | Muestra ayuda de comandos y configuración |
@@ -379,7 +383,7 @@ bin/lib/db-env.test.sh
 
 #### `mcp/database/schema-context.md`
 
-Descripción manual de las tablas más relevantes de la base de datos para el agente. Evita que Claude tenga que explorar el esquema completo en cada sesión. Aquí se documenta qué tablas existen, qué significan sus campos principales, y cuáles son las más usadas por new-admin y old-admin.
+Descripción manual de las tablas más relevantes de la base de datos para el agente. Evita que Claude tenga que explorar el esquema completo en cada sesión. Aquí se documenta qué tablas existen, qué significan sus campos principales, y cuáles son las más usadas por new-admin y old-admin. **Complementario** al `docs/<proyecto>/db-schema.md` auto-extraído: este aporta contexto de negocio (curación manual), aquel aporta el schema técnico real. El `db-agent` carga ambos (primero `db-schema.md`, luego este).
 
 #### `mcp/claude_desktop_config.json`
 
@@ -466,6 +470,10 @@ _Actualizado: 2025-05-26 10:30_
 | webpack | 4.6.0 | bundler |
 ```
 
+#### `docs/new-admin/db-schema.md`
+
+Schema técnico auto-extraído de la BBDD `civitatis` para las tablas que usa new-admin. Generado por `duck-sync-docs --schema new-admin` (no por el sync normal). Detección de tablas via `protected $table` en `app/Models/`. Por cada tabla: columnas, índices y DDL (`SHOW CREATE TABLE`). Tablas referenciadas en código pero ausentes en DB se marcan con ⚠️. Es la fuente de verdad de nombres/columnas reales que consume el `db-agent`. Hasta la primera ejecución es un placeholder.
+
 #### `docs/old-admin/backend-standards.md`
 
 Normas del backend de old-admin sincronizadas desde Confluence. Stack PHP 5.6 + Apache 2 (módulo `{URL_DOMAIN}/admin` del repo `civitatis`). Incluye las particularidades del entorno legacy: includes manuales sin autoload PSR-4 global, short tags `<?`, conexiones PDO directas.
@@ -478,9 +486,13 @@ Normas del frontend de old-admin sincronizadas desde Confluence: estructura de a
 
 Igual que el de new-admin pero para old-admin. Especialmente útil para el `migration-agent` y el `upgrade-agent` — necesitan conocer el estado real de lo que hay que migrar.
 
+#### `docs/old-admin/db-schema.md`
+
+Como el de new-admin pero con detección sobre SQL crudo/PDO (grep `FROM|JOIN|INTO|UPDATE`) restringida al scope `/admin`. Generado por `duck-sync-docs --schema old-admin`. La detección sobre SQL dinámico es parcial (se etiqueta como tal); tokens-ruido del regex se descartan y las tablas plausibles ausentes en DB se listan con ⚠️.
+
 #### `docs/last-sync.json`
 
-Registro de la última sincronización. Guarda la fecha, qué proyectos se actualizaron, y un resumen de los cambios detectados respecto al snapshot anterior.
+Registro de la última sincronización. Guarda la fecha, qué proyectos se actualizaron, y un resumen de los cambios detectados respecto al snapshot anterior. Los campos `schema_*` (`schema_updated`, `schema_tables_count`, `schema_tables_missing`) solo se actualizan en runs con `--schema`; en runs normales se preservan.
 
 ```json
 {
@@ -489,6 +501,9 @@ Registro de la última sincronización. Guarda la fecha, qué proyectos se actua
     "new-admin": {
       "confluence_updated": true,
       "snapshot_updated": true,
+      "schema_updated": true,
+      "schema_tables_count": 445,
+      "schema_tables_missing": ["entity_type"],
       "changes": [
         "axios actualizado de 1.5.0 a 1.6.0",
         "carpeta src/Services/Payments/ añadida",
@@ -498,6 +513,9 @@ Registro de la última sincronización. Guarda la fecha, qué proyectos se actua
     "old-admin": {
       "confluence_updated": true,
       "snapshot_updated": false,
+      "schema_updated": true,
+      "schema_tables_count": 286,
+      "schema_tables_missing": [],
       "changes": []
     }
   }
@@ -597,6 +615,15 @@ duck-sync-docs old-admin     # actualiza solo old-admin
 duck-sync-docs all           # actualiza los dos
 ```
 
+**3. Extracción de schema DB (flag explícito `--schema`)**
+`duck-sync-docs --schema [new-admin|old-admin|all]` genera `docs/<proyecto>/db-schema.md` con las tablas que usa cada proyecto y, por cada una, columnas/índices/DDL extraídos de la BBDD. El flag **debe ser explícito**: un `duck-sync-docs all` normal NO toca `db-schema.md`. Detección de tablas heurística (new-admin: `protected $table` en `app/Models/`; old-admin: grep SQL crudo en scope `/admin`). Entorno DB: `slave` por defecto, fallback `dev` con aviso; reutiliza `bin/lib/db-env.sh` (gates read-only por query, cero duplicación de la lógica de duck-db). Actualiza los campos `schema_*` de `last-sync.json`.
+
+```bash
+duck-sync-docs --schema new-admin           # extrae schema de new-admin
+duck-sync-docs --schema old-admin            # scope /admin
+duck-sync-docs --bundle --schema all         # refresca el bundle (maintainer)
+```
+
 #### `skills/docs-sync/prompts/sync-confluence.md`
 
 Prompt para la parte de Confluence: cómo convertir el formato de Confluence a markdown, qué partes conservar, cómo manejar tablas, bloques de código y listas anidadas.
@@ -608,6 +635,10 @@ Prompt para el análisis del código real. Le dice a Claude cómo leer `composer
 #### `skills/docs-sync/prompts/diff-report.md`
 
 Prompt para generar el resumen de cambios al terminar. Compara el snapshot anterior con el nuevo y destaca qué ha cambiado: dependencias actualizadas, carpetas nuevas, patrones nuevos detectados.
+
+#### `skills/docs-sync/prompts/extract-db-schema.md`
+
+Prompt para el modo `--schema`. Cuatro secciones: (A) identificación de tablas usadas por proyecto (new-admin via `protected $table` + convención Eloquent + joins de repos; old-admin via grep `FROM|JOIN|INTO|UPDATE` en scope `/admin`), (B) extracción del schema aplicando las gates de `db-env.sh` por query y ejecutando `DESCRIBE`/`SHOW INDEX`/`SHOW CREATE TABLE`, (C) formato de salida de `db-schema.md` (cabecera + por tabla columnas/índices/DDL + footer de tablas compartidas en `--schema all`), (D) actualización de los campos `schema_*` en `last-sync.json`. Tablas referenciadas en código pero ausentes en DB se marcan con ⚠️.
 
 #### `skills/code-audit/SKILL.md`
 
@@ -718,7 +749,7 @@ duck-migrate src/old-admin/modules/payments/
 ```
 
 #### `agents/db-agent.md`
-Agente especializado en la BBDD del proyecto **multi-entorno**. Carga `mcp/database/schema-context.md` y ayuda a escribir queries, revisar rendimiento, o entender qué tablas afecta un cambio. Especialmente útil porque new-admin y old-admin comparten BBDD pero la acceden de formas distintas.
+Agente especializado en la BBDD del proyecto **multi-entorno**. Carga en orden, si existen: (1) `~/.rubber-duck/docs/<proyecto>/db-schema.md` (schema auto-extraído por `duck-sync-docs --schema`, fuente de verdad de tablas/columnas/índices reales) y (2) `mcp/database/schema-context.md` (curación manual de contexto de negocio, complementario). Ayuda a escribir queries, revisar rendimiento, o entender qué tablas afecta un cambio. Especialmente útil porque new-admin y old-admin comparten BBDD pero la acceden de formas distintas. Si `db-schema.md` es solo el placeholder, avisa de ejecutar `duck-sync-docs --schema <proyecto>`.
 
 Antes de cada query, invoca obligatoriamente:
 
@@ -791,7 +822,7 @@ Cada archivo es un prompt corto que define exactamente qué hace cada comando cu
 | `plan.md` | `duck-plan` | `duck-plan PROJ-123` → genera `PROJ-123_plan.md` |
 | `implement.md` | `duck-implement` | `duck-implement PROJ-123_plan.md` |
 | `review.md` | `duck-review` | `duck-review PROJ-123` |
-| `sync-docs.md` | `duck-sync-docs` | `duck-sync-docs [new-admin\|old-admin\|all]` — sync Confluence + análisis código |
+| `sync-docs.md` | `duck-sync-docs` | `duck-sync-docs [new-admin\|old-admin\|all]` — sync Confluence + análisis código; `--schema [...]` extrae `db-schema.md` |
 | `audit.md` | `duck-audit` | `duck-audit [proyecto] [ruta\|all\|--branch]` |
 | `config.md` | `duck-config` | `duck-config [list\|get\|set\|reset\|setup] [clave] [valor]` |
 | `db.md` | `duck-db` | `duck-db [--env=<dev\|qa\|slave\|prod>] "<pregunta\|JIRA-KEY>"` |
@@ -889,6 +920,8 @@ COMANDOS
   duck-sync-docs  [new-admin|old-admin|all]
     Obtiene las normas actualizadas desde Confluence
     y sobreescribe los archivos en docs/.
+    --schema [new-admin|old-admin|all]  extrae db-schema.md desde la BBDD
+    (tablas usadas + columnas/índices/DDL, read-only via db-env.sh).
 
   duck-config  [list|get|set|reset|setup]  [clave]  [valor]
     Gestiona la configuración personal en ~/.rubber-duck/config.json.

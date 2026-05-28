@@ -11,9 +11,13 @@ Aplica a new-admin y old-admin con políticas distintas (ver §"Diferencias por 
 
 ```
 duck-sync-docs [new-admin|old-admin|all]
+duck-sync-docs --schema [new-admin|old-admin|all]
+duck-sync-docs --bundle --schema [all|new-admin|old-admin]   # maintainer
 ```
 
 Sin argumento → comportamiento equivalente a `all`.
+
+El flag `--schema` **debe ser explícito**: `duck-sync-docs all` NO toca `db-schema.md`. Ver §"Modo `--schema`".
 
 ## Reglas universales aplicables
 
@@ -50,6 +54,8 @@ Re-ejecutar `setup.sh` **no sobrescribe** `~/.rubber-duck/docs/` si ya existe: l
 | `duck-sync-docs new-admin` | `~/.rubber-duck/docs/new-admin/...` + actualiza la entrada `new-admin` en `~/.rubber-duck/docs/last-sync.json` |
 | `duck-sync-docs old-admin` | `~/.rubber-duck/docs/old-admin/project-snapshot.md` + entrada `old-admin` |
 | `duck-sync-docs --bundle [all\|new-admin\|old-admin]` | `$RUBBER_DUCK_HOME/docs/<proyecto>/...` + `$DOCS_DIR/last-sync.json` (modo maintainer) |
+| `duck-sync-docs --schema [all\|new-admin\|old-admin]` | `$DOCS_DIR/<proyecto>/db-schema.md` + entrada `schema_*` en `last-sync.json` |
+| `duck-sync-docs --bundle --schema [...]` | `$RUBBER_DUCK_HOME/docs/<proyecto>/db-schema.md` (modo maintainer) |
 
 ### Modo `--bundle` (maintainer-only)
 
@@ -60,6 +66,19 @@ duck-sync-docs --bundle all
 ```
 
 Escribe al `$RUBBER_DUCK_HOME/docs/` versionado. Esta operación está pensada para commits del repo de rubber-duck, no para el flujo diario del usuario.
+
+Con `--bundle --schema all`, además del refresco habitual, se ejecuta la extracción de schema de ambos proyectos y se escriben los `db-schema.md` bundled.
+
+### Modo `--schema` (extracción manual de schema DB)
+
+`duck-sync-docs --schema [new-admin|old-admin|all]` extrae el schema real de la BBDD `civitatis` para las tablas usadas por cada proyecto y escribe `$DOCS_DIR/<proyecto>/db-schema.md`.
+
+- **El flag debe ser explícito.** `duck-sync-docs all` (sin `--schema`) **no** toca `db-schema.md`.
+- **Entorno DB:** `slave` por defecto (sin carga en master). Fallback a `dev` con warning si `slave` no está configurado en `~/.rubber-duck/mcp/database/config.json`. Si ninguno está configurado → abortar.
+- Aplica el prompt `$RUBBER_DUCK_HOME/skills/docs-sync/prompts/extract-db-schema.md` (identificación de tablas → gates `db-env.sh` por query → `DESCRIBE`/`SHOW INDEX`/`SHOW CREATE TABLE`).
+- Escribe `$DOCS_DIR/<proyecto>/db-schema.md` (placeholder bundled hasta la primera ejecución real).
+- Actualiza los campos `schema_*` de la entrada del proyecto en `last-sync.json` (ver §"Paso 4").
+- Reutiliza `bin/lib/db-env.sh regex` y `bin/lib/db-env.sh gate` — cero duplicación de la lógica de seguridad de duck-db. Read-only obligatorio (R2).
 
 ### Por qué este modelo
 
@@ -161,11 +180,17 @@ new-admin:
     "new-admin": {
       "confluence_updated": true,
       "snapshot_updated": true,
+      "schema_updated": true,
+      "schema_tables_count": 0,
+      "schema_tables_missing": [],
       "changes": ["…"]
     },
     "old-admin": {
       "confluence_updated": false,
       "snapshot_updated": true,
+      "schema_updated": false,
+      "schema_tables_count": 0,
+      "schema_tables_missing": [],
       "changes": ["…"]
     }
   }
@@ -173,6 +198,8 @@ new-admin:
 ```
 
 `confluence_updated = false` para old-admin **siempre** (no aplica).
+
+Los campos `schema_*` solo se actualizan cuando el run incluye `--schema`. En runs sin `--schema` se preservan los valores previos (o quedan ausentes si nunca se extrajo schema).
 
 Si en este run solo se sincronizó un proyecto (p.ej. `duck-sync-docs new-admin`), se actualiza solo esa entrada y se preserva la otra del archivo previo (si existe).
 

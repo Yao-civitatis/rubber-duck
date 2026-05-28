@@ -44,7 +44,9 @@ Carga el agente `$RUBBER_DUCK_HOME/agents/db-agent.md`. Para cada invocación:
 
 1. **Si el argumento parece JIRA-KEY** (`^[A-Z]+-[0-9]+$`): lee el ticket vía MCP y analiza qué consultas necesita.
 2. **Si parece texto:** se trata como pregunta en lenguaje natural sobre la BBDD.
-3. Consulta `mcp/database/schema-context.md` (si está poblado) para localizar tablas relevantes.
+3. Consulta en orden (si existen): `~/.rubber-duck/docs/<proyecto>/db-schema.md` (schema auto-extraído)
+   y `mcp/database/schema-context.md` (contexto manual) para localizar tablas relevantes.
+   Si `db-schema.md` es solo el placeholder → avisar: ⚠️ Schema no generado. Ejecuta: duck-sync-docs --schema <proyecto>
 4. Para preguntas de **lectura**: ejecuta la query (solo `SELECT`/`SHOW`/`EXPLAIN`/`DESCRIBE`), muestra resultado + notas sobre uso por proyecto.
 5. Para preguntas de **mutación**: redacta la query, **no la ejecuta**, la presenta para que el usuario la ejecute manualmente. Incluye query de rollback cuando aplique.
 

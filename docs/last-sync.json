@@ -1,5 +1,5 @@
 {
-  "last_sync": "2026-05-27T00:00:00Z",
+  "last_sync": "2026-05-28T20:43:26Z",
   "projects": {
     "new-admin": {
       "confluence_updated": true,
@@ -7,7 +7,14 @@
       "changes": [
         "Primer snapshot — sin diff disponible.",
         "Confluence backend (id 2389508098) sincronizado a docs/new-admin/backend-standards.md.",
-        "Confluence frontend (id 2449342481) sincronizado a docs/new-admin/frontend-standards.md."
+        "Confluence frontend (id 2449342481) sincronizado a docs/new-admin/frontend-standards.md.",
+        "db-schema.md generado: 445 tablas (env=dev fallback; slave falló gate (b))."
+      ],
+      "schema_updated": true,
+      "schema_tables_count": 445,
+      "schema_tables_missing": [
+        "entity_type",
+        "latest_activity_booking_antifraud"
       ]
     },
     "old-admin": {
@@ -16,7 +23,45 @@
       "changes": [
         "Primer snapshot — sin diff disponible.",
         "Scope restringido a paths del módulo /admin (whitelist en skills/project-context/old_admin.md).",
-        "Confluence omitido por política de mantenimiento."
+        "Confluence omitido por política de mantenimiento.",
+        "db-schema.md generado (scope /admin): 286 tablas (env=dev fallback; slave falló gate (b))."
+      ],
+      "schema_updated": true,
+      "schema_tables_count": 286,
+      "schema_tables_missing": [
+        "actividades_incidencias",
+        "alojamientos",
+        "bookings",
+        "collections_tags_pages",
+        "destinos_cerca_destinos",
+        "distritos",
+        "distritos_alojamientos",
+        "encanto_destinos",
+        "encanto_estadisticas",
+        "encanto_hoteles",
+        "encanto_hoteles_cerca_hoteles",
+        "hotel_descriptions",
+        "hoteldescriptions",
+        "hotels",
+        "locationtomedias",
+        "mailchimp",
+        "medias",
+        "paginas",
+        "paises_ciudades",
+        "payments",
+        "payments_bookings",
+        "puntos_interes",
+        "puntos_interes_categorias",
+        "reservas",
+        "sendgrid",
+        "temp_alojamientos_distrito",
+        "transfer",
+        "traslados_ciudades",
+        "viajes_ofertas",
+        "viajes_origen_datos",
+        "zonas",
+        "zonas_destinos",
+        "zonas_horarias"
       ]
     }
   }
