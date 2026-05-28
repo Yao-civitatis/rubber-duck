@@ -153,7 +153,14 @@ Repite el mismo flujo para **old-admin**. Para old-admin el path esperado es la 
 > _
 ```
 
-Aplica el valor a `plan.output_dir`, `audit.export_dir` y `review.export_dir` salvo que el usuario aclare lo contrario después.
+Aplica el valor a las **4 claves** de output/export salvo que el usuario aclare lo contrario después:
+
+- `plan.output_dir`
+- `analyze.export_dir`
+- `audit.export_dir`
+- `review.export_dir`
+
+(Las 4 deben quedar en sync. Si en el futuro se añade otro comando que exporte, esta lista crece.)
 
 ### Paso 5 — duck-audit por defecto
 
