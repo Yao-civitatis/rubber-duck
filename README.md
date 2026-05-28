@@ -37,15 +37,42 @@ Un repo de **skills, agentes y comandos para Claude** + un puñado de scripts ba
 
 ## Instalación
 
+### Opción 1 — One-liner (recomendado)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Yao-civitatis/rubber-duck/main/install.sh | bash
+```
+
+Clona el repo en `~/proyectos/rubber-duck` y lanza `setup.sh` automáticamente.
+
+Variables opcionales:
+
+```bash
+# Otra ruta de instalación
+RUBBER_DUCK_DIR=~/code/rubber-duck curl -fsSL .../install.sh | bash
+
+# Probar una rama concreta
+RUBBER_DUCK_REF=feature/algo curl -fsSL .../install.sh | bash
+
+# Clonar sin ejecutar setup.sh
+SKIP_SETUP=1 curl -fsSL .../install.sh | bash
+```
+
+### Opción 2 — Manual
+
 ```bash
 # 1. Clonar
-git clone https://github.com/tu-user/rubber-duck ~/proyectos/rubber-duck
+git clone https://github.com/Yao-civitatis/rubber-duck.git ~/proyectos/rubber-duck
 cd ~/proyectos/rubber-duck
 
 # 2. Instalar (crea los duck-* en ~/.local/bin/ y los /duck-* en ~/.claude/commands/)
 chmod +x setup.sh
 ./setup.sh
+```
 
+### Pasos finales (cualquiera de las dos opciones)
+
+```bash
 # 3. Recargar shell
 source ~/.bashrc      # o source ~/.zshrc
 
