@@ -16,6 +16,7 @@ Histórico de planes de implementación de **rubber-duck**. **No consumido por e
 | Archivo | Cierre | Notas |
 |---|---|---|
 | `2026-05-28_plan_implementation_v1.md` | 2026-05-28 | Implementación inicial completa de la v1. Fases F1-F13 ejecutadas; F13 con verificación parcial automatizada y 3 flujos manuales pendientes (F13.3, F13.4, F13.6). |
+| `2026-05-28_plan_db_multi_env_v1.md` | 2026-05-28 | Plan post-MVP: `duck-db` multi-entorno (dev/qa/slave/prod) con read-only reforzado por gates `(a)..(e)` escalonadas por `danger_level`. F1–F8 completados. Tests 24/24 PASS. 1 fix cosmético en F7 (`keys_unsorted` para orden natural en error messages); sin items out-of-scope. |
 
 ## Política
 

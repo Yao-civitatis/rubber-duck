@@ -270,53 +270,131 @@ Si el usuario salta este paso → no crear archivo. Avisar:
    te avisarán y te dirán cómo configurarlo más tarde.
 ```
 
-### Paso 10 — MCP Database (opcional)
+### Paso 10 — MCP Database multi-entorno (opcional)
+
+`duck-db` opera contra **múltiples entornos** de la BBDD compartida. Por defecto, sin flag, se ejecuta sobre `dev`. Para `qa`, `slave` y `prod` el usuario tiene que pasar `--env=<nombre>` explícitamente en cada invocación (anti-typo) y se aplican gates anti-mutación escalonadas. Ver `bin/lib/db-env.sh`.
+
+Esquema final (schema v2, definido en `mcp/database/config.example.json`):
+
+```json
+{
+  "_version": 2,
+  "default": "dev",
+  "environments": {
+    "dev":   { "host": "...", "port": 3306, "database": "civitatis", "user": "...", "password": "...", "read_only": true,  "danger_level": "low",      "shared_with": ["new-admin", "old-admin"] },
+    "qa":    { "...": "danger_level=medium" },
+    "slave": { "...": "danger_level=high" },
+    "prod":  { "...": "danger_level=critical" }
+  }
+}
+```
+
+**`danger_level` y `read_only` son fijos por env** — el wizard NO los pregunta; los rellena automáticamente. `read_only` se fuerza a `true` siempre; un `false` no se acepta nunca.
+
+**Flujo:**
 
 ```
-🦆 Configurar el MCP de base de datos ahora?
-   Te imprimiré una plantilla JSON. Cópiala, rellena con tus credenciales (de Tilt/dev,
-   nunca de producción), y pégala completa.
+🦆 Configurar conexiones a base de datos (multi-entorno).
+   duck-db por defecto opera sobre `dev`. Para qa/slave/prod tendrás
+   que pasar --env=<nombre> explícitamente en cada invocación.
 
-   1) Sí, lo introduzco ahora
+   Solo `dev` es obligatorio. Los demás puedes saltarlos ahora y
+   añadirlos más tarde editando ~/.rubber-duck/mcp/database/config.json
+   o relanzando duck-config setup.
+
+   1) Configurar ahora (empezando por dev)
    2) Saltar (lo configuro más tarde)
 > _
 ```
 
-Si elige `1`, imprimir la plantilla:
-
-```json
-{
-  "_comment": "Configuración para MCP de base de datos. Read-only obligatorio (regla R2).",
-  "host": "db.civitatis.local",
-  "port": 3306,
-  "database": "civitatis",
-  "user": "REEMPLAZAR_USUARIO",
-  "password": "REEMPLAZAR_PASSWORD",
-  "read_only": true,
-  "shared_with": ["new-admin", "old-admin"]
-}
-```
-
-Después:
+Si elige `2` → no crear archivo. Avisar:
 
 ```
-Pega el JSON relleno (termina con una línea con solo un punto `.` para finalizar):
+ℹ️  MCP de base de datos sin configurar. `duck-db` avisará y
+   te dirá cómo configurarlo más tarde.
+```
+
+Si elige `1`, **por cada env en este orden** (`dev`, `qa`, `slave`, `prod`):
+
+#### Bloque por env
+
+Para `dev`:
+
+```
+── Entorno dev (OBLIGATORIO) ────────────────────────────────────
+   credenciales de Tilt/dev local, nunca de producción.
+
+   host      [127.0.0.1]: _
+   port      [3306]: _
+   database  [civitatis]: _
+   user (lectura): _
+   password (no se muestra al escribir): _
+```
+
+Para `qa`, `slave`, `prod`:
+
+```
+── Entorno <env> (opcional) ─────────────────────────────────────
+   1) Configurar ahora
+   2) Saltar
 > _
 ```
 
-Validar el JSON pegado:
+Si elige `2` para un env opcional → no añadir bloque para ese env. Continuar con el siguiente.
 
-- Debe ser JSON válido (`jq -e .` debe pasar).
-- Si no valida → mostrar el error y permitir reintentar (max 3 intentos).
-- Si pasa los 3 intentos → tratar como "saltar" con warning.
+Si elige `1`:
 
-Si valida:
+```
+   host      [<sugerencia segun env: qa.db.civitatis.local / replica.db.civitatis.local / prod.db.civitatis.local>]: _
+   port      [3306]: _
+   database  [civitatis]: _
+   user (READ-ONLY obligatorio): _
+   password (no se muestra al escribir): _
+```
+
+#### Validaciones por env
+
+- `user` no puede contener espacios; si llega vacío → reintentar (max 3 veces); si supera → tratar como "saltar" con warning.
+- `password` no puede ir vacío en `prod`/`slave`; sí permitido en `dev`/`qa` (con warning visible).
+- Para `slave` y `prod`, **mostrar advertencia previa**:
+
+  ```
+  ⚠️  Para <env>: usa credenciales con privilegios SOLO de lectura.
+      duck-db ejecutará `SHOW GRANTS FOR CURRENT_USER` antes de cada query
+      y abortará si detecta INSERT/UPDATE/DELETE/ALTER/DROP/TRUNCATE/CREATE/
+      GRANT/REVOKE/RENAME/REPLACE/MERGE/CALL/SUPER/RELOAD/FILE/PROCESS.
+  ```
+
+#### Construcción del JSON
+
+1. Construir en memoria el objeto JSON con los envs configurados. `dev` siempre está presente. Los demás aparecen solo si el usuario los rellenó.
+2. Fijar `_version: 2`, `default: "dev"`.
+3. Para cada env presente, fijar `read_only: true` (no negociable) y `danger_level` según la tabla:
+   - `dev` → `low`
+   - `qa` → `medium`
+   - `slave` → `high`
+   - `prod` → `critical`
+4. Añadir `shared_with: ["new-admin", "old-admin"]` a cada env.
+5. Validar con `jq -e '.environments.dev' archivo` antes de persistir.
+
+#### Persistencia
 
 1. Crear `~/.rubber-duck/mcp/database/` si no existe.
-2. Escribir el JSON a `~/.rubber-duck/mcp/database/config.json` con permisos 600.
-3. Confirmar: `✓ Config guardado en ~/.rubber-duck/mcp/database/config.json (chmod 600).`
+2. Escribir el JSON a `~/.rubber-duck/mcp/database/config.json` con permisos `600`.
+3. Confirmar:
 
-Si salta → mismo aviso defensivo que con Atlassian, sobre `duck-db`.
+   ```
+   ✓ Config guardado en ~/.rubber-duck/mcp/database/config.json (chmod 600).
+     Entornos configurados: <lista, p.ej. dev, qa, prod>
+     Entornos pendientes:   <lista, p.ej. slave>
+   ```
+
+#### Restricciones (CRÍTICAS)
+
+- **No** preguntar al usuario por `read_only` ni `danger_level` — fijos por env, no negociables.
+- **No** aceptar `read_only: false` en ningún env. Si el usuario lo edita a mano más tarde, las gates de `db-env.sh` lo detectarán y abortarán.
+- **No** escribir el JSON con `password` vacío para `slave`/`prod` (rechazar al validar).
+- **No** invocar comandos externos durante el wizard (ni `mysql`, ni ping al servidor). El wizard solo escribe archivo; las gates se ejecutan en tiempo de query.
 
 ### Paso 11 — Persistencia
 

@@ -69,12 +69,14 @@ El proyecto sobre el que opera tiene dos partes:
 ```
 rubber-duck/
 ├── bin/
-│   ├── duck.sh                 # dispatcher central
+│   ├── duck.sh                 # dispatcher central (parsea --env= para duck-db)
 │   └── lib/
 │       ├── detect-project.sh   # detección dinámica $PROJECT_ROOT / $PROJECT_TYPE
 │       ├── config.sh           # CRUD sobre ~/.rubber-duck/config.json (sin Claude)
 │       ├── help.sh             # render de duck-help (sin Claude)
-│       └── git.sh              # helper auto-commit/auto-push para skills
+│       ├── git.sh              # helper auto-commit/auto-push para skills
+│       ├── db-env.sh           # loader schema v2 + gates (a)..(e) read-only por env
+│       └── db-env.test.sh      # tests bash con stubs MYSQL_CMD_STUB / DUCK_DB_CONFIRM_STUB
 ├── hooks/
 │   ├── git/
 │   │   ├── pre-commit          # opt-in: ver git.hooks.pre_commit_enabled
@@ -87,8 +89,8 @@ rubber-duck/
 │   │   ├── page-ids.json       # IDs reales de Confluence (solo new-admin)
 │   │   └── (config.json)       # .gitignore — credenciales locales
 │   ├── database/
-│   │   ├── config.example.json
-│   │   └── (config.json)       # .gitignore
+│   │   ├── config.example.json # schema v2 multi-entorno (dev/qa/slave/prod)
+│   │   └── (config.json)       # .gitignore — credenciales reales por env
 │   ├── claude_desktop_config.example.json
 │   └── README.md
 ├── docs/                       # bundle versionado (capa 1 del modelo docs)
@@ -106,7 +108,7 @@ rubber-duck/
 │   ├── output-language.md
 │   ├── project-detection.md
 │   ├── self-contained.md
-│   └── operational-restrictions.md  # R1-R7 + política old-admin
+│   └── operational-restrictions.md  # R1-R7 + R2.1 (gates DB por env) + política old-admin
 ├── templates/                  # plantillas locales (regla self-contained)
 │   ├── README.md
 │   ├── planning-template.md
@@ -220,7 +222,7 @@ Comandos que instala:
 | `duck-onboarding` | Asistente para developers nuevos |
 | `duck-debug` | Diagnostica bugs |
 | `duck-migrate` | Migra código de old-admin a new-admin |
-| `duck-db` | Asistente de base de datos |
+| `duck-db` | Asistente de BBDD multi-entorno (`--env=dev\|qa\|slave\|prod`, default `dev`) |
 | `duck-standup` | Genera el resumen del daily |
 | `duck-upgrade` | Gestiona la migración de stack |
 | `duck-install-hooks` | Instala git hooks en un repo |
@@ -317,11 +319,63 @@ Mapa entre los archivos locales de normas (`docs/`) y los IDs de sus páginas co
 
 #### `mcp/database/config.json`
 
-Credenciales de conexión a la base de datos del proyecto. También en `.gitignore`.
+Credenciales de conexión a la BBDD del proyecto. También en `.gitignore`. **Schema v2 multi-entorno** (ver `bin/lib/db-env.sh`):
+
+```json
+{
+  "_version": 2,
+  "default": "dev",
+  "environments": {
+    "dev":   { "host": "...", "user": "...", "password": "...", "read_only": true, "danger_level": "low" },
+    "qa":    { "host": "...", "user": "...", "password": "...", "read_only": true, "danger_level": "medium" },
+    "slave": { "host": "...", "user": "...", "password": "...", "read_only": true, "danger_level": "high" },
+    "prod":  { "host": "...", "user": "...", "password": "...", "read_only": true, "danger_level": "critical" }
+  }
+}
+```
+
+`duck-db` opera sobre `dev` por defecto. Para `qa`/`slave`/`prod` se exige `--env=<nombre>` explícito en cada invocación. Las gates anti-mutación `(a)..(e)` se aplican antes de cada query según `danger_level` (ver R2.1 en `rules/operational-restrictions.md`).
 
 #### `mcp/database/config.example.json`
 
-Plantilla de conexión sin credenciales.
+Plantilla schema v2 sin credenciales. Cuatro envs (`dev`, `qa`, `slave`, `prod`). `read_only` y `danger_level` fijos por env, no negociables.
+
+#### `bin/lib/db-env.sh`
+
+Loader del config v2 + 5 gates anti-mutación:
+
+| Gate | Verifica | Exit code |
+|------|----------|-----------|
+| `(a)` | `environments.<env>.read_only == true` | `10` |
+| `(b)` | Servidor MySQL: `@@global.read_only=1 ∧ @@global.super_read_only=1` | `11` |
+| `(c)` | `SHOW GRANTS FOR CURRENT_USER` sin `INSERT/UPDATE/DELETE/ALTER/DROP/TRUNCATE/CREATE/GRANT OPTION/REVOKE/RENAME/REPLACE/MERGE/CALL/SUPER/RELOAD/FILE/PROCESS/ALL PRIVILEGES` | `12` |
+| `(d)` | Regex anti-mutación sobre la query | `13` |
+| `(e)` | Confirmación interactiva (slave: `y/N`; prod: tipear literal `prod`) | `14` |
+
+Matriz aplicada por env: `dev` → `(a)+(d)`. `qa` → `(a)+(d)+(e)`. `slave` → `(a)+(b)+(c)+(d)+(e)`. `prod` → idem `slave` con `(e)` requiriendo tipeo literal `prod`.
+
+Stubs para tests (no usar en runtime): `MYSQL_CMD_STUB`, `DUCK_DB_CONFIRM_STUB`.
+
+CLI standalone:
+
+```bash
+bin/lib/db-env.sh list                  # imprime envs (dev qa slave prod)
+bin/lib/db-env.sh default               # imprime env por defecto (dev)
+bin/lib/db-env.sh resolve prod          # imprime bloque JSON del env
+bin/lib/db-env.sh field prod host       # imprime un campo
+bin/lib/db-env.sh regex "SELECT 1"      # gate (d) standalone
+bin/lib/db-env.sh gate prod             # orquestador gates (a)(b)(c)(e)
+bin/lib/db-env.sh require prod 0        # 0=implicit, 1=--env explícito
+```
+
+#### `bin/lib/db-env.test.sh`
+
+Suite de tests bash con stubs. 24 casos cubren: descubrimiento básico, detección v1, `require_explicit`, regex `(d)`, gates `(a)`–`(e)` en `dev/qa/slave/prod`. Ejecutar:
+
+```bash
+bin/lib/db-env.test.sh
+# === RESULT: 24 passed, 0 failed ===
+```
 
 #### `mcp/database/schema-context.md`
 
@@ -664,11 +718,21 @@ duck-migrate src/old-admin/modules/payments/
 ```
 
 #### `agents/db-agent.md`
-Agente especializado en la base de datos del proyecto. Carga el `mcp/database/schema-context.md` y ayuda a escribir queries, revisar rendimiento, o entender qué tablas afecta un cambio. Especialmente útil porque new-admin y old-admin comparten base de datos pero la acceden de formas distintas.
+Agente especializado en la BBDD del proyecto **multi-entorno**. Carga `mcp/database/schema-context.md` y ayuda a escribir queries, revisar rendimiento, o entender qué tablas afecta un cambio. Especialmente útil porque new-admin y old-admin comparten BBDD pero la acceden de formas distintas.
+
+Antes de cada query, invoca obligatoriamente:
+
+1. `bin/lib/db-env.sh regex "<query>"` → gate `(d)`, exit `13` si es mutación.
+2. `bin/lib/db-env.sh gate $DUCK_DB_ENV` → gates `(a)(b)(c)(e)` según `danger_level`.
+
+Recibe el env activo en `$DUCK_DB_ENV` (inyectado por el dispatcher). Default `dev`. Para `qa/slave/prod` el usuario debe pasar `--env=<nombre>` explícito.
 
 ```bash
-duck-db "necesito traer los pedidos activos con su usuario y última dirección"
-duck-db PROJ-789   # analiza qué consultas necesita el ticket
+duck-db "necesito traer los pedidos activos con su usuario y última dirección"  # dev implícito
+duck-db --env=qa "verifica el contador de reservas tras el deploy"
+duck-db --env=slave "report masivo para evitar carga en master"
+duck-db --env=prod "consulta urgente fila X"   # tipear literal "prod" para confirmar
+duck-db PROJ-789                                # analiza qué consultas necesita el ticket
 ```
 
 #### `agents/standup-agent.md`
@@ -730,6 +794,7 @@ Cada archivo es un prompt corto que define exactamente qué hace cada comando cu
 | `sync-docs.md` | `duck-sync-docs` | `duck-sync-docs [new-admin\|old-admin\|all]` — sync Confluence + análisis código |
 | `audit.md` | `duck-audit` | `duck-audit [proyecto] [ruta\|all\|--branch]` |
 | `config.md` | `duck-config` | `duck-config [list\|get\|set\|reset\|setup] [clave] [valor]` |
+| `db.md` | `duck-db` | `duck-db [--env=<dev\|qa\|slave\|prod>] "<pregunta\|JIRA-KEY>"` |
 | `help.md` | `duck-help` | `duck-help [comando\|config\|config.<clave>]` |
 
 Cada archivo de comando le dice a Claude: qué skill cargar, en qué orden ejecutar los pasos, qué confirmaciones pedir al usuario, y cómo formatear el output final.
@@ -828,6 +893,10 @@ COMANDOS
   duck-config  [list|get|set|reset|setup]  [clave]  [valor]
     Gestiona la configuración personal en ~/.rubber-duck/config.json.
     Usa 'duck-config setup' para relanzar el asistente inicial.
+
+  duck-db  [--env=<env>]  "<pregunta o JIRA-KEY>"
+    Asistente de BBDD multi-entorno. Default env=dev. Para qa/slave/prod
+    requiere --env explícito. Gates anti-mutación (a)..(e) por danger_level.
 
   duck-help  [comando|config|config.<clave>]
     Muestra esta ayuda, o ayuda detallada de un comando o clave de config.

@@ -1,10 +1,47 @@
 {
-  "_comment": "Conexion a la BBDD compartida entre new-admin y old-admin. Copia este archivo a config.json y rellena los valores reales. config.json esta en .gitignore. El MCP debe configurarse en modo read-only (ver R2 en PLAN_IMPLEMENTATION.md): NUNCA INSERT/UPDATE/DELETE/ALTER/DROP/TRUNCATE.",
-  "host": "127.0.0.1",
-  "port": 3306,
-  "database": "civitatis",
-  "user": "TU_USUARIO_READONLY",
-  "password": "TU_PASSWORD_AQUI",
-  "read_only": true,
-  "shared_with": ["new-admin", "old-admin"]
+  "_comment": "Multi-entorno. Default: dev. Otros entornos (qa/slave/prod) requieren --env=<nombre> explicito en cada invocacion de duck-db. slave/prod aplican triple read-only gate antes de cada query: (a) config.read_only=true, (b) servidor @@global.read_only=1 + @@global.super_read_only=1, (c) usuario MySQL sin privilegios INSERT/UPDATE/DELETE/ALTER/DROP/TRUNCATE/CREATE/GRANT/REVOKE/RENAME/REPLACE/MERGE/CALL, (d) regex anti-mutacion en la query, (e) confirmacion interactiva (prod = tipear literal 'prod'). Copia este archivo a config.json y rellena con credenciales reales. config.json esta en .gitignore. Schema v2 - migracion desde v1 requiere reescritura manual (rubber-duck imprime guia).",
+  "_version": 2,
+  "default": "dev",
+  "environments": {
+    "dev": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "database": "civitatis",
+      "user": "TU_USUARIO_DEV",
+      "password": "TU_PASSWORD_DEV",
+      "read_only": true,
+      "danger_level": "low",
+      "shared_with": ["new-admin", "old-admin"]
+    },
+    "qa": {
+      "host": "qa.db.civitatis.local",
+      "port": 3306,
+      "database": "civitatis",
+      "user": "TU_USUARIO_QA",
+      "password": "TU_PASSWORD_QA",
+      "read_only": true,
+      "danger_level": "medium",
+      "shared_with": ["new-admin", "old-admin"]
+    },
+    "slave": {
+      "host": "replica.db.civitatis.local",
+      "port": 3306,
+      "database": "civitatis",
+      "user": "TU_USUARIO_READONLY_SLAVE",
+      "password": "TU_PASSWORD_READONLY_SLAVE",
+      "read_only": true,
+      "danger_level": "high",
+      "shared_with": ["new-admin", "old-admin"]
+    },
+    "prod": {
+      "host": "prod.db.civitatis.local",
+      "port": 3306,
+      "database": "civitatis",
+      "user": "TU_USUARIO_READONLY_PROD",
+      "password": "TU_PASSWORD_READONLY_PROD",
+      "read_only": true,
+      "danger_level": "critical",
+      "shared_with": ["new-admin", "old-admin"]
+    }
+  }
 }

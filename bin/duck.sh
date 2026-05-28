@@ -107,6 +107,63 @@ if ! is_project_agnostic "$cmd"; then
 fi
 
 # -----------------------------------------------------------------------------
+# 4.5. Parseo `--env=<entorno>` (solo para duck-db)
+# -----------------------------------------------------------------------------
+
+DUCK_DB_ENV=""
+DUCK_DB_ENV_EXPLICIT=0
+
+if [[ "$cmd" == "db" ]]; then
+  remaining_args=()
+  for arg in "$@"; do
+    case "$arg" in
+      --env=*)
+        DUCK_DB_ENV="${arg#--env=}"
+        DUCK_DB_ENV_EXPLICIT=1
+        ;;
+      *)
+        remaining_args+=("$arg")
+        ;;
+    esac
+  done
+  # Reemplazar $@ sin el flag --env=
+  set -- "${remaining_args[@]:+${remaining_args[@]}}"
+
+  # Cargar db-env.sh para validacion (no aborta si el archivo no existe).
+  # shellcheck source=lib/db-env.sh
+  source "$RUBBER_DUCK_HOME/bin/lib/db-env.sh"
+
+  if db_env_exists; then
+    # Si no se paso --env, usar el default del config (debe ser "dev").
+    if [[ -z "$DUCK_DB_ENV" ]]; then
+      DUCK_DB_ENV="$(db_env_default 2>/dev/null)"
+      duck_default_rc=$?
+      if (( duck_default_rc != 0 )); then
+        # Schema v1 detectado u otro error. db_env_default ya imprimio la guia.
+        exit "$duck_default_rc"
+      fi
+    fi
+
+    # Validar que el env existe en el config.
+    if ! db_env_list 2>/dev/null | grep -qx "$DUCK_DB_ENV"; then
+      echo "🦆 duck-db: entorno \"$DUCK_DB_ENV\" no configurado." >&2
+      echo "    Disponibles: $(db_env_list 2>/dev/null | tr '\n' ' ')" >&2
+      exit 2
+    fi
+
+    # Solo `dev` puede operar implicitamente. Para qa/slave/prod, exigir --env=.
+    if ! db_env_require_explicit "$DUCK_DB_ENV" "$DUCK_DB_ENV_EXPLICIT"; then
+      exit 2
+    fi
+  else
+    # Sin config: tampoco bloquear aqui — el agente avisara que hace falta setup.
+    [[ -z "$DUCK_DB_ENV" ]] && DUCK_DB_ENV="dev"
+  fi
+
+  export DUCK_DB_ENV DUCK_DB_ENV_EXPLICIT
+fi
+
+# -----------------------------------------------------------------------------
 # 5. Construcción del system prompt
 # -----------------------------------------------------------------------------
 
@@ -137,6 +194,17 @@ build_system_prompt() {
       echo "- **Stack legacy (PHP 5.6):** no uses syntax post-5.6 (sin spread \`...\`, sin \`??\`, sin typed properties, sin return types nullable). Imita el estilo del archivo editado."
       echo "- **Visión:** eliminar old-admin → migrar a new-admin. Cuando un cambio sea no trivial, sugiere usar \`duck-migrate\`."
     fi
+    echo
+  fi
+  if [[ "$cmd" == "db" ]]; then
+    echo "## Entorno DB activo"
+    echo
+    echo "- \`\$DUCK_DB_ENV\` = \`$DUCK_DB_ENV\` (explicit=$DUCK_DB_ENV_EXPLICIT)"
+    echo "- **Antes de CADA query**, invoca obligatoriamente:"
+    echo "  1. \`$RUBBER_DUCK_HOME/bin/lib/db-env.sh regex \"<query>\"\` → exit 13 si es mutación."
+    echo "  2. \`$RUBBER_DUCK_HOME/bin/lib/db-env.sh gate \$DUCK_DB_ENV\` → aplica gates (a)(b)(c)(e) según danger_level."
+    echo "  Solo si ambos devuelven 0 → ejecuta la query vía MCP."
+    echo "- No inventes gates. Cita las letras (a)..(e) en el banner."
     echo
   fi
   echo "## Instrucciones del comando"
