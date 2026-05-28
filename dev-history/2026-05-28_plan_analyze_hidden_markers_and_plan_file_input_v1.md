@@ -1,5 +1,7 @@
 # Spec-Driven Implementation Plan: duck-analyze marcadores ocultos + duck-plan input por archivo
 
+> **🗄️ CERRADO — HISTÓRICO (2026-05-28).** S1 y S2 implementados y verificados. Ver §"Cierre / Resultado de implementación". No se reabre; cambios futuros en un plan nuevo.
+
 ## 1. Traceability (Spec-Driven)
 
 - **Feature A:** `duck-analyze` — los marcadores `<!-- rubber-duck:start -->` / `<!-- rubber-duck:end -->` y el texto "Generado por rubber-duck (fecha)" se ven literales en la descripción de Jira. Hacerlos no visibles.
@@ -66,18 +68,18 @@
 
 #### Checklist
 
-- [ ] Probar en ticket de sandbox qué admite `editJiraIssue` (markdown vs ADF; color; properties) → fijar A1 / A2 / A3.
-- [ ] Modificar `skills/jira-analyzer/SKILL.md` Paso 7 según la estrategia.
-- [ ] Modificar `skills/jira-analyzer/prompts/generate_story.md` (quitar branding visible).
-- [ ] Modificar `commands/analyze.md` (Comportamiento + Idempotencia).
-- [ ] Verificación manual: ejecutar `duck-analyze` 2× sobre el sandbox; confirmar (a) nada de rubber-duck visible, (b) reemplazo in-place sin duplicar.
-- [ ] **COMMIT:** `feat(jira-analyzer): hide rubber-duck markers and metadata in Jira description`
+- [x] Probar en ticket de sandbox qué admite `editJiraIssue` (markdown vs ADF; color; properties) → **fijado A2**. Resultados sobre PANA-4171: `editJiraIssue contentFormat=adf` acepta marca `textColor`; render = `<font color="#ffffff">rubber-duck:start ...</font>` (invisible en claro). `getJiraIssue` devuelve la descripción como **markdown** (color stripped) → la detección por subcadena sigue funcionando. **A1 descartado:** no hay tool MCP de entity-properties (`editJiraIssue` solo escribe `fields`).
+- [x] Modificar `skills/jira-analyzer/SKILL.md` Paso 7 (marcadores blancos ADF + detección por subcadena + aviso de fidelidad).
+- [x] Modificar `skills/jira-analyzer/prompts/generate_story.md` (nota: no emite marcadores ni branding; los añade el Paso 7).
+- [x] Modificar `commands/analyze.md` (Comportamiento punto 6 + Idempotencia).
+- [x] Verificación manual sobre PANA-4171: bloque escrito con marcadores en blanco, contenido visible; marcadores presentes en el read markdown (idempotencia OK). Ticket **restaurado** a su descripción original tras el test.
+- [ ] **COMMIT:** pendiente (se hará en el cierre del plan, junto con S2).
 
 ---
 
-### ⏳ PENDING SCENARIO 2: `duck-plan` acepta un archivo de entrada
+### ✅ SCENARIO 2 (DONE): `duck-plan` acepta un archivo de entrada
 
-*-- [Pending Planning] --*
+*Implementado. Ver Cierre para detalle y desviaciones.*
 
 **Vista previa de cambios:**
 
@@ -123,3 +125,33 @@
 | `commands/plan.md` | MODIFICAR (invocación + detección de modo) | S2 |
 | `SPEC.md` / `README.md` | MODIFICAR si la feature cambia superficie pública | cierre |
 | `bin/**`, `setup.sh` | sin cambios | — |
+
+---
+
+## Cierre / Resultado de implementación (2026-05-28)
+
+S1 y S2 implementados y verificados. `SPEC.md` y `README.md` actualizados con ambas features.
+
+### Archivos tocados (real)
+
+| Archivo | Acción real | Esc. |
+|---|---|---|
+| `skills/jira-analyzer/SKILL.md` | Paso 7 reescrito: marcadores ADF en blanco `#FFFFFF`, detección por subcadena, aviso de fidelidad de media | S1 |
+| `skills/jira-analyzer/prompts/generate_story.md` | nota: el bloque NO emite marcadores/branding (los añade el Paso 7) | S1 |
+| `commands/analyze.md` | Comportamiento punto 6 + Idempotencia | S1 |
+| `bin/duck.sh` | **(no previsto en el plan)** `PLAN_FILE_MODE` + detección de proyecto soft en file-mode + bloque neutro de proyecto cuando `$PROJECT_TYPE` vacío | S2 |
+| `commands/plan.md` | invocación dual + detección de modo + export paths + exit codes | S2 |
+| `skills/task-planner/SKILL.md` | modo archivo: lectura, inferencia de proyecto, pseudo-key, persistencia por slug | S2 |
+| `skills/task-planner/prompts/build_plan.md` | pseudo-key + origen archivo en Traceability | S2 |
+| `SPEC.md`, `README.md`, `dev-history/README.md` | documentación | cierre |
+
+### Desviaciones respecto al plan (justificadas)
+
+1. **S1 — estrategia elegida = A2 (color blanco ADF).** A1 (entity property) se **descartó**: el MCP no expone tool de properties (`editJiraIssue` solo escribe `fields`). A2 verificado en vivo sobre **PANA-4171**: `editJiraIssue contentFormat=adf` con marca `textColor #FFFFFF` → render `<font color="#ffffff">rubber-duck:start ...</font>` (invisible en claro); `getJiraIssue` devuelve markdown (color stripped) → detección por subcadena intacta. Ticket restaurado a su descripción original tras el test.
+2. **S1 — añadido no previsto: aviso de fidelidad.** Como el MCP solo lee markdown, escribir ADF exige reconstruir la descripción → imágenes/paneles/tablas pueden degradarse a placeholder. Se añadió un flujo de aviso con opciones (modo oculto / modo compatible con marcadores visibles / cancelar). Caveat documentado: el blanco se ve tenue en modo oscuro de Jira.
+3. **S2 — cambio en `bin/duck.sh` (no contemplado en la vista previa).** El bloqueante real era que el dispatcher exige detección de proyecto (exit 3) para todo comando no-agnóstico. Se añadió `PLAN_FILE_MODE` y detección soft: en file-mode sin proyecto, `$PROJECT_ROOT=$PWD`, `$PROJECT_TYPE=""` y el skill infiere/pregunta. Además se corrigió el bloque de restricciones para no forzar la política old-admin cuando `$PROJECT_TYPE` está vacío.
+
+### Verificación
+
+- S1: round-trip ADF probado en PANA-4171 (color blanco persiste, marcadores detectables, idempotencia OK), ticket restaurado.
+- S2: `bash -n bin/duck.sh` OK; lógica de `PLAN_FILE_MODE` probada en aislamiento (JIRA-key → modo Jira; archivo existente → modo archivo; archivo inexistente / no-key → no file-mode, el skill devuelve exit 2).

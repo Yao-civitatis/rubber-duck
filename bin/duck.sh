@@ -99,10 +99,28 @@ is_project_agnostic() {
 # 4. Detección de proyecto (cuando aplica)
 # -----------------------------------------------------------------------------
 
+# duck-plan admite un archivo de entrada como alternativa a una JIRA-KEY.
+# En "file-mode" la detección de proyecto es soft: el skill infiere el proyecto
+# del contenido del archivo (o pregunta) en vez de abortar con exit 3.
+PLAN_FILE_MODE=0
+if [[ "$cmd" == "plan" && $# -ge 1 ]]; then
+  first_arg="$1"
+  if [[ ! "$first_arg" =~ ^[A-Z]+-[0-9]+$ ]] && [[ -f "$first_arg" ]]; then
+    PLAN_FILE_MODE=1
+  fi
+fi
+export PLAN_FILE_MODE
+
 if ! is_project_agnostic "$cmd"; then
   if ! detect_project_root; then
-    duck_detection_error
-    exit 3
+    if [[ "$PLAN_FILE_MODE" == "1" ]]; then
+      # File-mode sin proyecto detectado: continuar; el proyecto se infiere en el skill.
+      export PROJECT_ROOT="$(pwd)"
+      export PROJECT_TYPE=""
+    else
+      duck_detection_error
+      exit 3
+    fi
   fi
 fi
 
@@ -187,12 +205,14 @@ build_system_prompt() {
       echo "- **R6 (Frontend):** 100% Options API, Container + Presentational, módulos en \`dev/vue/src/modules/\`."
       echo "- Carga \`$PROJECT_ROOT/.claude/domain-index.md\`, \`project-context.md\` y \`refactoring-state.md\` si existen antes de explorar código."
       echo "- Toolchain de calidad: usa \`$PROJECT_ROOT/bin/pre-commit <herramienta>\` (no reimplementes phpstan/php-cs-fixer/phparkitect)."
-    else
+    elif [[ "$PROJECT_TYPE" == "old-admin" ]]; then
       echo "- **Política old-admin (mantenimiento-only):** solo bug fixes y mantenimiento. Si el plan describe funcionalidad nueva → advierte y propone hacerlo en new-admin."
       echo "- **Scope estricto:** solo se tocan rutas del módulo \`/admin\`: \`application/admin/\`, \`application/lib/{Admin,Dao/Admin,Dto/Admin,Queues/Newadmin,NewAdmin}/\`, \`application/templates/admin/\`, \`webroot/(static|dev)/(js|scss|css)/admin/\`, \`dev/src/js/admin/\`, \`application/css_admin/\`. Rechaza cambios fuera."
       echo "- **Sin estándares formales ni Confluence ni herramientas de calidad.** Audit = sentido común (seguridad, lógica). No reportes estilo legacy."
       echo "- **Stack legacy (PHP 5.6):** no uses syntax post-5.6 (sin spread \`...\`, sin \`??\`, sin typed properties, sin return types nullable). Imita el estilo del archivo editado."
       echo "- **Visión:** eliminar old-admin → migrar a new-admin. Cuando un cambio sea no trivial, sugiere usar \`duck-migrate\`."
+    else
+      echo "- **Proyecto por determinar (duck-plan file-mode):** \`\$PROJECT_TYPE\` vacío. Infiere new-admin/old-admin del contenido del archivo de entrada (heurística de \`generate_story.md\`); si no queda claro, **pregunta al usuario** antes de planificar. No asumas old-admin por defecto."
     fi
     echo
   fi

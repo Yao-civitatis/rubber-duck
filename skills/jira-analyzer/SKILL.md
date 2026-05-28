@@ -147,23 +147,47 @@ Default = `N`. Si confirma `s` → ir al Paso 7. Si rechaza → exit 0 (Paso 8) 
 
 ### Paso 7 — Actualización idempotente (solo si confirmó)
 
-1. Toma la descripción **actual completa** que leíste en el Paso 1.
-2. Busca en ella un bloque delimitado por marcadores:
-   - Inicio: `<!-- rubber-duck:start -->`
-   - Fin: `<!-- rubber-duck:end -->`
-3. **Si los marcadores existen** → reemplaza solo el contenido entre ellos por el nuevo bloque (preserva todo lo demás de la descripción intacto). Si hay dos pares por error, mantén el primero y elimina el segundo (normaliza).
-4. **Si no existen** → añade al final de la descripción:
-   ```
-   
-   ---
-   <!-- rubber-duck:start -->
-   ## Generado por rubber-duck (YYYY-MM-DD HH:MM)
-   
-   <contenido User Story + AC + Consideraciones Técnicas>
-   <!-- rubber-duck:end -->
-   ```
-5. Llama al MCP para actualizar la descripción con la nueva versión.
-6. Confirma al usuario con `✓ Descripción de <JIRA-KEY> actualizada.`
+**Objetivo:** que el usuario NO vea en la descripción de Jira ningún marcador ni branding de rubber-duck, pero que la detección idempotente siga funcionando.
+
+**Contexto técnico (verificado sobre Jira Cloud):** la descripción es ADF. Los `<!-- comentarios HTML -->` NO son un nodo ADF → Jira los renderiza como **texto literal visible** (causa del problema histórico). La solución es escribir los marcadores como texto ADF con marca **`textColor` blanco (`#FFFFFF`)**: invisibles sobre fondo claro, pero presentes como ancla. Al releer la descripción como markdown (Paso 1) el color se pierde, pero las cadenas `rubber-duck:start` / `rubber-duck:end` siguen ahí → la detección funciona. (Render verificado: `<font color="#ffffff">rubber-duck:start ...</font>`.)
+
+#### Marcadores (nuevo formato, sin `<!-- -->`)
+
+- Apertura: texto `rubber-duck:start generated=YYYY-MM-DD` con marca `textColor` `#FFFFFF`. El timestamp viaja **dentro** del marcador → ya no hay encabezado visible "Generado por rubber-duck".
+- Cierre: texto `rubber-duck:end` con marca `textColor` `#FFFFFF`.
+- El contenido entre ambos (User Story + AC + Consideraciones) se renderiza con formato normal y visible.
+
+#### Procedimiento
+
+1. Toma la descripción **actual completa** leída en el Paso 1 (markdown).
+2. Busca el bloque por sus cadenas ancla: desde la línea que contenga `rubber-duck:start` hasta la que contenga `rubber-duck:end` (inclusive). Detección por subcadena, **independiente del color/formato** y compatible con bloques antiguos `<!-- rubber-duck:start -->`/`<!-- rubber-duck:end -->`.
+3. **Si el bloque existe** → reemplaza desde `start` hasta `end` por el nuevo bloque (preserva el resto intacto). Si hay dos pares por error, conserva el primero y elimina el segundo (normaliza).
+4. **Si no existe** → añade al final, precedido de un separador `---`.
+5. **Escritura vía MCP en modo ADF** (`editJiraIssue`, `contentFormat: adf`): reconstruye la descripción completa como documento ADF = `[contenido previo del usuario] + rule + [marcador start blanco] + [User Story/AC/Consideraciones como nodos ADF] + [marcador end blanco]`. Marca de los marcadores: `{"type":"textColor","attrs":{"color":"#FFFFFF"}}` sobre el nodo de texto.
+6. Confirma al usuario con `✓ Descripción de <JIRA-KEY> actualizada (marcadores rubber-duck ocultos).`
+
+#### ⚠️ Aviso de fidelidad (obligatorio antes de escribir en modo ADF)
+
+El MCP devuelve la descripción como **markdown** (no ADF), así que para escribir ADF hay que **reconstruir** la descripción completa desde su markdown. Texto, listas, enlaces, código y encabezados se preservan; **nodos no representables en markdown (imágenes/media pegadas, paneles, tablas complejas) pueden degradarse a un placeholder**.
+
+Antes de escribir, inspecciona la descripción actual. Si contiene media/imagen embebida (markdown `![...](...)` con `blob:`/`media`, o macros de panel/tabla), **avisa y pregunta**:
+
+```
+⚠️ La descripción contiene contenido enriquecido (imagen/panel/tabla) que el modo
+   oculto (ADF) podría degradar a un placeholder.
+   [a] Continuar en modo oculto (recomendado si el contenido es solo texto)
+   [v] Modo compatible: marcadores VISIBLES pero contenido enriquecido intacto
+   [n] Cancelar
+> _
+```
+
+- `a` → proceder en ADF (marcadores blancos), reconstruyendo el contenido lo más fiel posible.
+- `v` → escribir en markdown con marcadores visibles (`rubber-duck:start`/`end` en texto plano, degradación segura, sin tocar el contenido enriquecido).
+- `n` → no tocar Jira.
+
+Si la descripción es solo texto (sin media/paneles), proceder en modo oculto sin preguntar.
+
+**Caveat de tema:** el blanco es invisible sobre fondo claro; en **modo oscuro** de Jira los marcadores pueden verse como texto tenue. Comportamiento aceptado (alternativa pedida por el usuario; ADF no tiene nodo de comentario real).
 
 Si la escritura falla, muestra el error y conserva el texto generado en pantalla.
 

@@ -1,29 +1,41 @@
 # Skill `task-planner`
 
-Genera un plan de implementación detallado a partir de un ticket de Jira analizado. Guarda el resultado como `<JIRA-KEY>_plan.md` (o `.html`) en el directorio configurado.
+Genera un plan de implementación detallado a partir de **un ticket de Jira** o **un archivo local** de contexto. Guarda el resultado como `<nombre>_plan.md` (o `.html`) en el directorio configurado.
 
 ## Invocación
 
-`duck-plan <JIRA-KEY>`
+```
+duck-plan <JIRA-KEY>        # modo Jira
+duck-plan <ruta-archivo>    # modo archivo
+```
 
-Ejemplo: `duck-plan PANA-123` → genera `./PANA-123_plan.md`.
+Ejemplos: `duck-plan PANA-123` → `./PANA-123/PANA-123_plan.md`; `duck-plan tasks/new-task.md` → `./new-task/new-task_plan.md`.
 
 ## Prerrequisitos
 
-- El ticket debe ser legible vía MCP de Atlassian.
-- `$PROJECT_TYPE` debe estar definido (`new-admin` o `old-admin`). El dispatcher lo exporta tras `detect-project.sh`.
+- **Modo Jira:** el ticket debe ser legible vía MCP de Atlassian.
+- **Modo archivo:** el archivo de entrada debe existir y ser legible (`.md`/`.txt`). Jira no se usa.
+- `$PROJECT_TYPE` lo exporta el dispatcher (`detect-project.sh`). En modo archivo puede venir **vacío** (invocado fuera de un repo) → se infiere en el Paso 2.
 - `$PROJECT_ROOT/.claude/domain-index.md` se lee si existe (new-admin).
 - `$RUBBER_DUCK_HOME/templates/planning-template.md` se usa como base.
 
+## Detección de modo
+
+El dispatcher marca `$PLAN_FILE_MODE=1` cuando el primer argumento no es una `^[A-Z]+-[0-9]+$` y es un archivo existente. Si `$PLAN_FILE_MODE=1` → **modo archivo**; si no → **modo Jira**. Si el argumento no es ni key válida ni archivo existente → error, exit 2.
+
 ## Flujo
 
-### Paso 1 — Lectura del ticket
+### Paso 1 — Lectura de la fuente de contexto
 
-Lee el ticket completo vía MCP, incluyendo descripción actual. Si la descripción contiene un bloque `<!-- rubber-duck:start --> ... <!-- rubber-duck:end -->`, **úsalo como input principal** (es el resultado de `duck-analyze`). Si no, usa la descripción cruda.
+**Modo Jira:** lee el ticket completo vía MCP, incluyendo descripción actual. Si la descripción contiene un bloque entre marcadores `rubber-duck:start` … `rubber-duck:end` (visibles u **ocultos en blanco**; detección por subcadena), **úsalo como input principal** (es el resultado de `duck-analyze`). Si no, usa la descripción cruda.
+
+**Modo archivo:** lee el archivo local indicado como input principal. **No** se llama al MCP. Deriva la **pseudo-key** del basename sin extensión (`tasks/new-task.md` → `new-task`); se usa donde el flujo Jira usaría `<JIRA-KEY>`. El link a Jira en Traceability queda como `N/A (input por archivo: <ruta>)`.
 
 ### Paso 2 — Carga de contexto
 
-Según `$PROJECT_TYPE`:
+**Resolución del proyecto:** si `$PROJECT_TYPE` está definido, úsalo. Si está **vacío** (modo archivo fuera de un repo), infiere `new-admin`/`old-admin` del contenido del input con la heurística de `$RUBBER_DUCK_HOME/skills/jira-analyzer/prompts/generate_story.md` §"Detección de proyecto" (componentes, labels, paths mencionados). Si no queda claro → **pregunta al usuario** antes de continuar; no asumas old-admin por defecto. En modo archivo puede que `$PROJECT_ROOT/.claude/*` no exista → omite esas lecturas y básate en el contenido del archivo.
+
+Según el proyecto resuelto:
 
 **new-admin:**
 1. Lee `$RUBBER_DUCK_HOME/skills/project-context/new_admin.md`.
@@ -55,22 +67,22 @@ Sigue el formato definido en `$RUBBER_DUCK_HOME/templates/planning-template.md`,
 Sigue la **convención universal de paths de export** definida en `$RUBBER_DUCK_HOME/rules/export-paths.md`:
 
 ```
-<plan.output_dir>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>
+<plan.output_dir>/<slug>/<slug>_plan.<ext>
 ```
 
 donde:
 
-- `<plan.output_dir>` viene de config (default `.`). **Si es relativo, se resuelve contra `$PROJECT_ROOT`**; si es absoluto (empieza por `/` o `~`), se usa tal cual.
+- `<slug>` = la `<JIRA-KEY>` (modo Jira) o la **pseudo-key** derivada del basename del archivo sin extensión (modo archivo; `tasks/new-task.md` → `new-task`).
+- `<plan.output_dir>` viene de config (default `.`). **Si es relativo, se resuelve contra `$PROJECT_ROOT`**; si es absoluto (empieza por `/` o `~`), se usa tal cual. En modo archivo sin proyecto, `$PROJECT_ROOT` es el CWD.
 - `<ext>` viene de `plan.output_format` (default `md`).
-- `<JIRA-KEY>` es la clave del ticket (siempre disponible para `duck-plan`).
-- Si por algún motivo no hubiera key (defensivo), usar `<plan.output_dir>/plan/plan.<ext>`.
+- Si por algún motivo no hubiera `<slug>` (defensivo), usar `<plan.output_dir>/plan/plan.<ext>`.
 
 Procedimiento:
 
 1. Resolver `<plan.output_dir>` aplicando la regla anterior → `resolved_output_dir`.
-2. Calcular `dest_dir = "$resolved_output_dir/<JIRA-KEY>"`.
+2. Calcular `dest_dir = "$resolved_output_dir/<slug>"`.
 3. `mkdir -p "$dest_dir"`.
-4. Calcular `dest_file = "$dest_dir/<JIRA-KEY>_plan.<ext>"`.
+4. Calcular `dest_file = "$dest_dir/<slug>_plan.<ext>"`.
 5. Si `$dest_file` ya existe → preguntar:
    ```
    Ya existe <ruta>. ¿Qué hago?
@@ -85,7 +97,8 @@ Procedimiento:
 ### Paso 5 — Salida
 
 - Éxito: exit 0, ruta del archivo en stdout.
-- Lectura del ticket falló: exit 1.
+- Lectura de la fuente (ticket o archivo) falló: exit 1.
+- Argumento que no es ni `<JIRA-KEY>` válida ni archivo existente: exit 2.
 - Usuario canceló al detectarse "funcionalidad nueva en old-admin": exit 0 con mensaje claro.
 - Plantilla no encontrada: exit 2.
 

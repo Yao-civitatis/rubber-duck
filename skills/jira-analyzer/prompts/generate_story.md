@@ -2,6 +2,8 @@
 
 Genera el bloque siguiendo este formato exacto. Idioma según `output.language` (default `es`).
 
+> El bloque generado contiene **solo** las tres secciones (User Story, Criterios de Aceptación, Consideraciones Técnicas). **No** incluyas marcadores `rubber-duck:start`/`end` ni encabezados de branding tipo "Generado por rubber-duck": esos los añade (ocultos, en blanco) el Paso 7 del skill al escribir en Jira. Ver `skills/jira-analyzer/SKILL.md` §Paso 7.
+
 ## Estructura del bloque
 
 ```markdown

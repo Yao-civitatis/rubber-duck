@@ -26,14 +26,16 @@ El proyecto sobre el que opera tiene dos partes:
 1. duck-analyze PROJ-123     →  lee el ticket, genera user story + AC + consideraciones técnicas
                                  muestra el resultado y pide confirmación con 3 opciones:
                                     [s] actualizar Jira (append idempotente entre marcadores
-                                        <!-- rubber-duck:start --> ... <!-- rubber-duck:end -->,
+                                        rubber-duck:start / rubber-duck:end escritos en texto
+                                        ADF color blanco #FFFFFF → NO visibles en Jira;
                                         replace in-place si ya existían)
                                     [n] dejar solo en pantalla
                                     [e] exportar a archivo, luego re-preguntar por Jira
 
 2. duck-plan PROJ-123        →  genera un plan de implementación adaptando
-                                 templates/planning-template.md
-                                 guarda como <plan.output_dir>/PROJ-123/PROJ-123_plan.md
+   o duck-plan tasks/x.md       templates/planning-template.md
+                                 fuente: ticket de Jira (KEY) o archivo local (file-mode)
+                                 guarda como <plan.output_dir>/<slug>/<slug>_plan.md
                                  (path relativo a $PROJECT_ROOT salvo absoluto)
 
 3. duck-implement PROJ-123_plan.md
@@ -548,7 +550,7 @@ Instrucciones para el skill de análisis de tickets. Le dice a Claude que cuando
 3. Generar tres secciones: **User Story**, **Criterios de Aceptación** y **Consideraciones Técnicas**.
 4. Mostrar el resultado al usuario.
 5. Pedir confirmación con **3 opciones**:
-   - `[s]` actualizar Jira **idempotentemente** entre marcadores `<!-- rubber-duck:start -->` … `<!-- rubber-duck:end -->`. Si los marcadores ya existían → reemplaza solo el bloque (resto de la descripción intacto). Si no → añade al final.
+   - `[s]` actualizar Jira **idempotentemente** entre marcadores `rubber-duck:start` … `rubber-duck:end`. **Marcadores ocultos:** se escriben como texto ADF color blanco `#FFFFFF` (no visibles en Jira; la descripción ADF no soporta comentarios HTML, que se renderizarían literales). El timestamp viaja dentro del marcador start → sin encabezado "Generado por" visible. Detección por subcadena (compatible con marcadores antiguos `<!-- ... -->`); reemplaza el bloque in-place o lo añade al final. Si la descripción tiene media/panel/tabla, avisa antes (el modo ADF podría degradarla) y ofrece modo compatible con marcadores visibles.
    - `[n]` no tocar nada.
    - `[e]` exportar a archivo (path: `<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>`), luego re-pregunta `[s/N]` por Jira.
 
@@ -558,9 +560,11 @@ Prompt detallado con el formato exacto en que debe generarse la user story, los 
 
 #### `skills/task-planner/SKILL.md`
 
-Instrucciones para generar el plan de implementación. Le dice a Claude que debe leer el contenido del ticket analizado, cargar el contexto del proyecto correspondiente (`project-context/`), analizar qué archivos y partes del código hay que modificar, y generar un documento `.md` con el plan detallado paso a paso.
+Instrucciones para generar el plan de implementación. La fuente del contexto puede ser **un ticket de Jira** (`duck-plan <JIRA-KEY>`) o **un archivo local** (`duck-plan tasks/new-task.md`, *file-mode*). Le dice a Claude que debe leer el contenido (ticket analizado o archivo), cargar el contexto del proyecto correspondiente (`project-context/`), analizar qué archivos y partes del código hay que modificar, y generar un documento `.md` con el plan detallado paso a paso.
 
-Al terminar, guarda el plan como `PROJ-123_plan.md` en el directorio desde donde se ejecutó el comando. El nombre del archivo incluye siempre la Jira key para que sea fácil de identificar y relacionar con el ticket.
+**Detección de modo:** el dispatcher marca `$PLAN_FILE_MODE=1` cuando el primer argumento no es una `^[A-Z]+-[0-9]+$` y es un archivo existente. En file-mode no se toca Jira; el proyecto se infiere del contenido si `$PROJECT_TYPE` viene vacío (preguntando si no queda claro), y la **pseudo-key** se deriva del basename del archivo.
+
+Al terminar, guarda el plan como `<slug>_plan.md` (slug = JIRA-key o basename del archivo) bajo `<plan.output_dir>/<slug>/`.
 
 #### `skills/task-planner/prompts/build_plan.md`
 
@@ -819,7 +823,7 @@ Cada archivo es un prompt corto que define exactamente qué hace cada comando cu
 | Archivo | Comando | Uso |
 |---|---|---|
 | `analyze.md` | `duck-analyze` | `duck-analyze PROJ-123 [archivo-contexto]` |
-| `plan.md` | `duck-plan` | `duck-plan PROJ-123` → genera `PROJ-123_plan.md` |
+| `plan.md` | `duck-plan` | `duck-plan PROJ-123` o `duck-plan tasks/x.md` → genera `<slug>_plan.md` |
 | `implement.md` | `duck-implement` | `duck-implement PROJ-123_plan.md` |
 | `review.md` | `duck-review` | `duck-review PROJ-123` |
 | `sync-docs.md` | `duck-sync-docs` | `duck-sync-docs [new-admin\|old-admin\|all]` — sync Confluence + análisis código; `--schema [...]` extrae `db-schema.md` |
@@ -901,9 +905,10 @@ COMANDOS
     Lee el ticket de Jira, genera user story, criterios de aceptación
     y consideraciones técnicas. Pide confirmación antes de actualizar Jira.
 
-  duck-plan  <JIRA-KEY>
-    Genera un plan de implementación detallado en formato archivo.
-    Guarda el resultado como PROJ-123_plan.md (o .html según config).
+  duck-plan  <JIRA-KEY | archivo.md>
+    Genera un plan de implementación detallado. Fuente: ticket de Jira
+    o archivo local (file-mode, no toca Jira). Guarda como <slug>_plan.md
+    (o .html según config), slug = JIRA-key o basename del archivo.
 
   duck-implement  <plan.md>
     Implementa el código a partir del plan indicado.
@@ -1055,7 +1060,7 @@ duck-config setup
 | Clave | Valores | Default | Descripción |
 |---|---|---|---|
 | `plan.output_format` | `md`, `html` | `md` | Formato del archivo generado por `duck-plan` |
-| `plan.output_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-plan`. Relativo a `$PROJECT_ROOT` si no empieza por `/` o `~`. Path final: `<resolved>/<JIRA-KEY>/<JIRA-KEY>_plan.<ext>` |
+| `plan.output_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-plan`. Relativo a `$PROJECT_ROOT` si no empieza por `/` o `~`. Path final: `<resolved>/<slug>/<slug>_plan.<ext>` (slug = JIRA-key o basename del archivo en file-mode) |
 | `analyze.export_format` | `md`, `html`, `json`, `txt` | `md` | Formato del archivo exportado por `duck-analyze` (opción `e` en la confirmación) |
 | `analyze.export_dir` | cualquier ruta | `.` | Raíz del dir destino para `duck-analyze`. Path final: `<resolved>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>` |
 | `project.new_admin_path` | ruta absoluta | `""` | Fallback opcional si la auto-detección desde `$PWD` falla |

@@ -29,10 +29,11 @@ Carga el skill `$RUBBER_DUCK_HOME/skills/jira-analyzer/SKILL.md` y sigue su fluj
    - `n` → no tocar nada, fin.
    - `e` → exportar a archivo siguiendo `$RUBBER_DUCK_HOME/rules/export-paths.md`: `<analyze.export_dir>/<JIRA-KEY>/<JIRA-KEY>_analyze.<ext>` (formato `analyze.export_format`, idioma `output.language` per `$RUBBER_DUCK_HOME/rules/output-language.md`). **Tras exportar, vuelve a preguntar solo por Jira (`s/N`)** para que puedas hacer las dos cosas si quieres, sin bucle.
 6. Si en cualquier momento confirmas `s` → actualiza la descripción del ticket de forma idempotente:
-   - Bloque entre `<!-- rubber-duck:start -->` y `<!-- rubber-duck:end -->`.
-   - Si los marcadores ya existían → reemplaza solo el contenido entre ellos.
-   - Si no existían → añade al final precedido de separador `---`.
+   - Bloque entre marcadores `rubber-duck:start` / `rubber-duck:end` escritos como texto **color blanco (`#FFFFFF`) vía ADF** → no visibles en Jira. Sin encabezado "Generado por": el timestamp viaja oculto dentro del marcador start.
+   - Si el bloque ya existía → reemplaza solo su contenido (detección por subcadena, compatible con marcadores antiguos `<!-- ... -->`).
+   - Si no existía → añade al final precedido de separador `---`.
    - Nunca reemplaza la descripción entera. Nunca duplica el bloque.
+   - **Aviso de fidelidad:** si la descripción tiene imagen/panel/tabla, el modo oculto (ADF) podría degradarla; el skill avisa y ofrece modo compatible con marcadores visibles. Ver `skills/jira-analyzer/SKILL.md` §Paso 7.
 7. Si rechaza → no toca Jira. El texto generado permanece visible en pantalla para copia manual.
 
 ## Restricciones
@@ -43,7 +44,7 @@ Carga el skill `$RUBBER_DUCK_HOME/skills/jira-analyzer/SKILL.md` y sigue su fluj
 
 ## Idempotencia
 
-`duck-analyze PANA-123` puede ejecutarse N veces sobre el mismo ticket. El resultado es siempre el mismo bloque entre marcadores (modulo timestamp). Llamadas repetidas no duplican contenido en Jira.
+`duck-analyze PANA-123` puede ejecutarse N veces sobre el mismo ticket. El resultado es siempre el mismo bloque entre marcadores ocultos (modulo timestamp). La detección localiza las cadenas `rubber-duck:start`/`rubber-duck:end` aunque estén en blanco (no visibles); llamadas repetidas reemplazan el bloque in-place y no duplican contenido en Jira.
 
 ## Errores y exit codes
 

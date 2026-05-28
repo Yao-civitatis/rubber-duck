@@ -99,8 +99,9 @@ Desde dentro del proyecto que vayas a tocar (la detección del proyecto es autom
 ```bash
 cd ~/proyectos/tilt/tilts/new-admin       # o civitatis para old-admin
 
-duck-analyze PANA-123                     # lee Jira, propone US + AC + consideraciones
+duck-analyze PANA-123                     # lee Jira, propone US + AC + consideraciones (marcadores ocultos en Jira)
 duck-plan PANA-123                        # genera plan en docs/PANA-123/PANA-123_plan.md
+duck-plan tasks/new-task.md               # plan desde un archivo local (no toca Jira)
 duck-implement PANA-123_plan.md           # escribe el código según el plan
 duck-audit --branch                       # audit solo de lo cambiado en la rama
 duck-review PANA-123                      # cruza el código con los AC del ticket
@@ -114,8 +115,8 @@ En Claude Code el equivalente es `/duck-analyze PANA-123`, `/duck-plan PANA-123`
 
 | Comando | Acción |
 |---|---|
-| `duck-analyze <KEY>` | Lee ticket, genera User Story + AC + Consideraciones. Pide confirmación con 3 opciones: actualizar Jira / nada / exportar. |
-| `duck-plan <KEY>` | Genera plan de implementación detallado en formato Spec-Driven. |
+| `duck-analyze <KEY>` | Lee ticket, genera User Story + AC + Consideraciones. Pide confirmación con 3 opciones: actualizar Jira / nada / exportar. Los marcadores rubber-duck se escriben ocultos (texto blanco) en la descripción de Jira. |
+| `duck-plan <KEY \| archivo.md>` | Genera plan de implementación detallado en formato Spec-Driven. Acepta una JIRA-KEY o un archivo local de contexto (file-mode). |
 | `duck-implement <plan.md>` | Implementa código según el plan. TDD en new-admin; bug fix / mantenimiento en old-admin. |
 | `duck-review <KEY>` | Compara código vs AC del ticket. Veredicto 🟢/🟡/🔴. |
 | `duck-audit <ruta\|all\|--branch>` | Audit estático + semántico. new-admin: delega en `bin/pre-commit`. old-admin: sentido común. |

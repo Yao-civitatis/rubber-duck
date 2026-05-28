@@ -6,9 +6,10 @@ Construye el plan a partir de `$RUBBER_DUCK_HOME/templates/planning-template.md`
 
 - **Idioma del cuerpo:** se determina por `output.language` del config (`es` por defecto, `en` opcional). Todo el contenido del plan generado se redacta en ese idioma, incluyendo títulos de secciones, descripciones, criterios, comentarios y el commit message sugerido.
 - **Literales que se preservan:** Jira keys (`PANA-123`), X-Ray IDs, símbolos de código (`PaymentService::process()`), paths de archivos, comandos shell. Estos NO se traducen.
-- **`{JIRA_KEY}`:** sustituir por la key real del ticket.
+- **`{JIRA_KEY}`:** sustituir por la key real del ticket (modo Jira) o por la **pseudo-key** derivada del basename del archivo de entrada sin extensión (modo archivo; `tasks/new-task.md` → `new-task`).
 - **`{project}.{module}`:** sustituir por el módulo real. Para new-admin: `new-admin.<modulo>` donde `<modulo>` se deriva del dominio (ej: `new-admin.payments`, `new-admin.activities`). Para old-admin: `old-admin.<path-corto>` donde `<path-corto>` es el subdirectorio relevante del scope `/admin`.
-- **`[Link to JIRA]`:** sustituir por la URL real del ticket (`https://civitatis.atlassian.net/browse/<JIRA-KEY>`).
+- **`[Link to JIRA]`:** modo Jira → URL real del ticket (`https://civitatis.atlassian.net/browse/<JIRA-KEY>`). Modo archivo → `N/A (input por archivo: <ruta>)`.
+- **Origen en Traceability:** en modo archivo, añade en la sección Traceability una línea `**Origen:** archivo local <ruta>` para que quede claro que el plan no proviene de un ticket de Jira.
 
 ## Adaptaciones específicas por proyecto
 
