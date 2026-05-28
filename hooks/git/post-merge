@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# rubber-duck git hook: post-merge
+#
+# Comportamiento:
+#   - Lee git.hooks.post_merge_enabled de ~/.rubber-duck/config.json
+#   - Si false (default) -> exit 0 inmediatamente.
+#   - Si true: ejecuta duck-sync-docs all en background (no bloquear el flujo de git).
+
+set -uo pipefail
+
+CONFIG="$HOME/.rubber-duck/config.json"
+
+enabled="false"
+if [[ -f "$CONFIG" ]] && command -v jq >/dev/null 2>&1; then
+  enabled="$(jq -r '.git.hooks.post_merge_enabled // false' "$CONFIG" 2>/dev/null)"
+fi
+[[ "$enabled" == "true" ]] || exit 0
+
+if ! command -v duck-sync-docs >/dev/null 2>&1; then
+  echo "🦆 post-merge (rubber-duck): duck-sync-docs no está en \$PATH — saltado." >&2
+  exit 0
+fi
+
+echo "🦆 post-merge (rubber-duck): ejecutando duck-sync-docs all en background…"
+# Background + nohup para que cerrar la terminal no lo mate; output a un log temporal
+nohup duck-sync-docs all >"$HOME/.rubber-duck/last-post-merge-sync.log" 2>&1 &
+disown
+echo "   Log: $HOME/.rubber-duck/last-post-merge-sync.log"
+
+exit 0

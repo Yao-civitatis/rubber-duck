@@ -1,0 +1,10 @@
+{
+  "_comment": "Conexion a la BBDD compartida entre new-admin y old-admin. Copia este archivo a config.json y rellena los valores reales. config.json esta en .gitignore. El MCP debe configurarse en modo read-only (ver R2 en PLAN_IMPLEMENTATION.md): NUNCA INSERT/UPDATE/DELETE/ALTER/DROP/TRUNCATE.",
+  "host": "127.0.0.1",
+  "port": 3306,
+  "database": "civitatis",
+  "user": "TU_USUARIO_READONLY",
+  "password": "TU_PASSWORD_AQUI",
+  "read_only": true,
+  "shared_with": ["new-admin", "old-admin"]
+}

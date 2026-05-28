@@ -1,0 +1,18 @@
+# Credenciales MCP — viven en ~/.rubber-duck/mcp/ (datos personales del usuario).
+# Estas líneas se mantienen como defensa por si alguien las crea por error en el repo.
+mcp/atlassian/config.json
+mcp/database/config.json
+mcp/claude_desktop_config.json
+
+# Backups generados por /caveman:compress y similares
+*.original.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# rubber-duck git hook: pre-commit
+#
+# Comportamiento:
+#   - Lee git.hooks.pre_commit_enabled de ~/.rubber-duck/config.json
+#   - Si false (default) -> exit 0 inmediatamente.
+#   - Si true:
+#       new-admin -> invoca $PROJECT_ROOT/bin/pre-commit con los staged.
+#       old-admin -> invoca duck-audit sobre los staged dentro del scope /admin.
+#   - Bloquea el commit si falla. Skip con `git commit --no-verify`.
+
+set -uo pipefail
+
+CONFIG="$HOME/.rubber-duck/config.json"
+
+# 1. Flag de activación
+enabled="false"
+if [[ -f "$CONFIG" ]] && command -v jq >/dev/null 2>&1; then
+  enabled="$(jq -r '.git.hooks.pre_commit_enabled // false' "$CONFIG" 2>/dev/null)"
+fi
+[[ "$enabled" == "true" ]] || exit 0
+
+# 2. Cargar detección de proyecto
+if [[ -z "${RUBBER_DUCK_HOME:-}" ]]; then
+  echo "🦆 pre-commit (rubber-duck): RUBBER_DUCK_HOME no definido — abortando hook." >&2
+  echo "   Ejecuta setup.sh y abre una nueva terminal, o configura el env var." >&2
+  exit 0  # no bloquear el commit por un problema del propio hook
+fi
+# shellcheck source=../../bin/lib/detect-project.sh
+source "$RUBBER_DUCK_HOME/bin/lib/detect-project.sh"
+
+if ! detect_project_root; then
+  echo "🦆 pre-commit (rubber-duck): no se ha detectado proyecto — saltado." >&2
+  exit 0
+fi
+
+# 3. Archivos staged que importan
+staged_php="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.php$' || true)"
+staged_other="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep -E '\.(vue|js|scss|css)$' || true)"
+staged_all="$(printf '%s\n%s\n' "$staged_php" "$staged_other" | grep -v '^$' || true)"
+
+if [[ -z "$staged_all" ]]; then
+  exit 0
+fi
+
+# 4. Delegar según proyecto
+case "$PROJECT_TYPE" in
+  new-admin)
+    if [[ ! -x "$PROJECT_ROOT/bin/pre-commit" ]]; then
+      echo "🦆 pre-commit (rubber-duck): $PROJECT_ROOT/bin/pre-commit no existe — saltado." >&2
+      exit 0
+    fi
+    echo "🦆 pre-commit (rubber-duck): delegando en $PROJECT_ROOT/bin/pre-commit…"
+    # bin/pre-commit del proyecto corre todo el suite; deja que sea él quien decida sobre los staged
+    "$PROJECT_ROOT/bin/pre-commit"
+    rc=$?
+    if (( rc != 0 )); then
+      echo "🦆 pre-commit (rubber-duck): falló (exit $rc). Skip con --no-verify si sabes lo que haces." >&2
+      exit "$rc"
+    fi
+    ;;
+  old-admin)
+    if ! command -v duck-audit >/dev/null 2>&1; then
+      echo "🦆 pre-commit (rubber-duck): duck-audit no está en \$PATH — saltado." >&2
+      exit 0
+    fi
+    echo "🦆 pre-commit (rubber-duck): ejecutando duck-audit en modo sentido común sobre staged…"
+    # Pasar lista de archivos staged como argumentos múltiples no funciona en el modo duck-audit
+    # actual (acepta un solo argumento ruta|all|--branch). Estrategia: usar --branch que ya
+    # cubre el conjunto modificado. Es el modo más cercano al staged en la práctica.
+    duck-audit --branch
+    rc=$?
+    if (( rc != 0 )); then
+      echo "🦆 pre-commit (rubber-duck): audit reportó bloqueantes. Skip con --no-verify." >&2
+      exit "$rc"
+    fi
+    ;;
+  *)
+    echo "🦆 pre-commit (rubber-duck): PROJECT_TYPE desconocido ('$PROJECT_TYPE') — saltado." >&2
+    exit 0
+    ;;
+esac
+
+exit 0

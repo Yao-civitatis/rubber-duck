@@ -1,0 +1,27 @@
+{
+  "_comment": "Plantilla para Claude Desktop. Copia el contenido relevante a ~/Library/Application Support/Claude/claude_desktop_config.json (Mac) o %APPDATA%/Claude/claude_desktop_config.json (Win) o ~/.config/Claude/claude_desktop_config.json (Linux). Rellena con tus credenciales reales. El archivo local NO se commitea.",
+  "mcpServers": {
+    "atlassian": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-atlassian"],
+      "env": {
+        "JIRA_URL": "https://civitatis.atlassian.net",
+        "JIRA_CLOUD_ID": "53c3ec94-9a0b-42ce-8e81-41719567106f",
+        "JIRA_TOKEN": "REEMPLAZAR_CON_TU_TOKEN",
+        "CONFLUENCE_SPACE_KEY": "PANA"
+      }
+    },
+    "database": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-mysql"],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_DATABASE": "civitatis",
+        "MYSQL_USER": "REEMPLAZAR_USUARIO_READONLY",
+        "MYSQL_PASSWORD": "REEMPLAZAR_PASSWORD",
+        "MYSQL_READ_ONLY": "true"
+      }
+    }
+  }
+}
