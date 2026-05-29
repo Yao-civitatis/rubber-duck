@@ -123,7 +123,7 @@ En Claude Code el equivalente es `/duck-analyze PANA-123`, `/duck-plan PANA-123`
 | `duck-sync-docs [proyecto]` | Sincroniza docs desde Confluence + analiza el código real. Escribe en `~/.rubber-duck/docs/`. |
 | `duck-config {list\|get\|set\|reset\|setup}` | Gestiona la configuración personal. |
 | `duck-help [comando\|config.<clave>]` | Ayuda contextual. |
-| `duck-onboarding` | Sesión interactiva para devs nuevos. |
+| `duck-ask ["<pregunta>"]` | Experto consultable de new-admin/old-admin (junior y senior). No inventa: si no sabe, lo dice. |
 | `duck-debug <error\|KEY>` | Diagnóstico de bugs con hipótesis ordenadas. |
 | `duck-migrate <ruta-en-old-admin>` | Migra una pieza de old-admin a new-admin. |
 | `duck-db "<pregunta>"` | Consultas a la BBDD compartida (modo lectura). |

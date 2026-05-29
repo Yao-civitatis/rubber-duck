@@ -36,7 +36,7 @@ COMMANDS=(
   audit
   config
   help
-  onboarding
+  ask
   debug
   migrate
   db

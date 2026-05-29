@@ -32,7 +32,7 @@ declare -A HELP_SHORT=(
   [sync-docs]="Sincroniza docs desde Confluence (solo new-admin) y regenera el project-snapshot.md de cada proyecto."
   [config]="Gestiona la configuración personal en ~/.rubber-duck/config.json (list/get/set/reset/setup)."
   [help]="Muestra esta ayuda, o ayuda detallada de un comando o clave de config."
-  [onboarding]="Sesión interactiva para developers nuevos. Carga el contexto completo de ambos proyectos."
+  [ask]="Experto consultable de new-admin y old-admin (junior y senior). Carga el contexto completo de ambos proyectos. Si no sabe algo, lo dice; no inventa."
   [debug]="Diagnostica bugs. Acepta un mensaje de error o una Jira key."
   [migrate]="Migra código de old-admin a new-admin (prioridad estratégica del equipo)."
   [db]="Asistente de base de datos. Modo read-only obligatorio (R2): nunca INSERT/UPDATE/DELETE."
@@ -50,7 +50,7 @@ declare -A HELP_USAGE=(
   [sync-docs]="duck-sync-docs [new-admin|old-admin|all]"
   [config]="duck-config {list|get|set|reset|setup} [clave] [valor]"
   [help]="duck-help [comando|config|config.<clave>]"
-  [onboarding]="duck-onboarding"
+  [ask]="duck-ask [\"<pregunta>\"]   (interactivo si se omite la pregunta)"
   [debug]="duck-debug <\"mensaje de error\"|JIRA-KEY>"
   [migrate]="duck-migrate <ruta-en-old-admin>"
   [db]="duck-db \"<pregunta o consulta>\"|<JIRA-KEY>"
@@ -202,14 +202,24 @@ EJEMPLOS
 EOF
 )"
 
-HELP_DETAILS[onboarding]="$(cat <<'EOF'
-Sesión interactiva. Carga el contexto completo de ambos proyectos
-(.claude/project-context.md, domain-index.md, refactoring-state.md
-cuando existen) y queda a la espera de tus preguntas sin
-necesidad de molestar al equipo.
+HELP_DETAILS[ask]="$(cat <<'EOF'
+Experto consultable de new-admin y old-admin. Responde preguntas de
+cualquier nivel — desde dudas junior (estructura, naming) hasta
+cuestiones senior (decisiones de arquitectura, trade-offs,
+integraciones, edge-cases de stack). No sustituye al onboarding: lo
+incluye y va más allá.
 
-EJEMPLO
-  duck-onboarding
+Carga el contexto completo de ambos proyectos (.claude/project-context.md,
+domain-index.md, refactoring-state.md cuando existen) y las normas vivas.
+
+HONESTIDAD
+  Si la respuesta no consta en docs/código/reglas, responde "no lo sé"
+  y sugiere a quién/dónde preguntar. NO inventa soluciones ni datos.
+
+EJEMPLOS
+  duck-ask                         (modo interactivo)
+  duck-ask "¿dónde está la lógica de pagos en new-admin?"
+  duck-ask "¿por qué old-admin y new-admin comparten BBDD?"
 EOF
 )"
 
@@ -312,7 +322,7 @@ COMANDOS
 EOF
   # Orden estable (no por hash). Sincronizar con setup.sh COMMANDS.
   for cmd in analyze plan implement review audit sync-docs config help \
-             onboarding debug migrate db standup upgrade install-hooks; do
+             ask debug migrate db standup upgrade install-hooks; do
     printf '  duck-%-15s  %s\n' "$cmd" "${HELP_SHORT[$cmd]}"
   done
   cat <<EOF
