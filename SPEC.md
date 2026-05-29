@@ -153,7 +153,7 @@ rubber-duck/
 │   ├── implementer-agent.md
 │   ├── reviewer-agent.md
 │   ├── auditor-agent.md
-│   ├── onboarding-agent.md
+│   ├── ask-agent.md
 │   ├── debug-agent.md
 │   ├── migration-agent.md
 │   ├── db-agent.md
@@ -163,7 +163,7 @@ rubber-duck/
 │   ├── analyze.md  plan.md  implement.md  review.md
 │   ├── audit.md    sync-docs.md
 │   ├── config.md   help.md
-│   ├── onboarding.md  debug.md  migrate.md
+│   ├── ask.md  debug.md  migrate.md
 │   ├── db.md       standup.md   upgrade.md
 │   └── install-hooks.md
 ├── setup.sh
@@ -225,7 +225,7 @@ Comandos que instala:
 | `duck-audit` | Audita el código |
 | `duck-config` | Gestiona la configuración personal |
 | `duck-help` | Muestra ayuda de comandos y configuración |
-| `duck-onboarding` | Asistente para developers nuevos |
+| `duck-ask` | Experto consultable de ambos proyectos (junior y senior); no inventa |
 | `duck-debug` | Diagnostica bugs |
 | `duck-migrate` | Migra código de old-admin a new-admin |
 | `duck-db` | Asistente de BBDD multi-entorno (`--env=dev\|qa\|slave\|prod`, default `dev`) |
@@ -705,7 +705,7 @@ System prompts completos para cada agente. Mientras los skills son instrucciones
 | `implementer-agent.md` | `duck-implement` | Al escribir el código |
 | `reviewer-agent.md` | `duck-review` | Al revisar el código |
 | `auditor-agent.md` | `duck-audit` | Al auditar calidad y normas |
-| `onboarding-agent.md` | `duck-onboarding` | Cuando entra un developer nuevo al equipo |
+| `ask-agent.md` | `duck-ask` | Para consultar cualquier duda de los proyectos (junior o senior) |
 | `debug-agent.md` | `duck-debug` | Al investigar un bug |
 | `migration-agent.md` | `duck-migrate` | Al migrar código de old-admin a new-admin |
 | `db-agent.md` | `duck-db` | Al trabajar con la base de datos |
@@ -729,12 +729,12 @@ Agente especializado en revisión de código contra requisitos. Cruza el código
 #### `agents/auditor-agent.md`
 Agente especializado en auditoría técnica. Interpreta el output de phpstan, php-cs-fixer y phparkitect, y lo combina con la revisión semántica contra los docs de normas.
 
-#### `agents/onboarding-agent.md`
-Agente para developers nuevos. Tiene cargado el contexto completo de ambos proyectos — estructura de carpetas, stack, patrones usados, flujo de trabajo — y responde preguntas sobre el proyecto sin necesidad de molestar al equipo. Útil la primera semana de un developer nuevo.
+#### `agents/ask-agent.md`
+Experto consultable del equipo. Tiene cargado el contexto completo de ambos proyectos — estructura de carpetas, stack, patrones usados, flujo de trabajo, integraciones — y responde preguntas de **cualquier nivel** (junior y senior) sin necesidad de molestar al equipo. Cubre el onboarding de un developer nuevo, pero también dudas senior de arquitectura, trade-offs e integraciones. **No inventa:** si la respuesta no consta en docs/código/reglas, responde "no lo sé" y sugiere a quién/dónde preguntar.
 
 ```bash
-duck-onboarding
-# → Claude arranca con contexto completo y espera preguntas
+duck-ask                          # modo interactivo: arranca con contexto y espera preguntas
+duck-ask "¿dónde está la lógica de pagos en new-admin?"
 ```
 
 #### `agents/debug-agent.md`
